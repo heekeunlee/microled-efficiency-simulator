@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>마이크로 LED 효율 시뮬레이터</title>
+<meta name="description" content="마이크로 LED의 크기, 전류밀도, 표면 재결합 속도를 바꾸며 IQE·EQE와 포톤 출력을 계산해 보는 축약 모델입니다." data-en-content="A reduced model for exploring how micro-LED size, current density and surface recombination affect IQE, EQE and photon output.">
+<meta name="theme-color" content="#2f6fed">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<nav class="nav"><div class="wrap">
+  <a class="brand" href="./"><span class="brand-mark">μ</span><span class="bt"><b>마이크로 LED 효율 연구실</b><small>MICRO-LED EFFICIENCY LAB</small></span></a>
+</div></nav>
+
+<main class="wrap led-page">
+  <header class="led-intro">
+    <p class="eyebrow" data-en="DEVICE PHYSICS · REDUCED MODEL">DEVICE PHYSICS · 축약 모델</p>
+    <h1 data-en="How Much Do Sidewall Defects Reduce LED Efficiency?">작아진 LED, 측벽 결함은 출광효율을 얼마나 낮출까?</h1>
+    <p class="lead" data-en="Change the pixel size, current density and sidewall quality. See how the estimated internal and external quantum efficiencies and photon output respond.">픽셀 크기와 전류밀도, 측벽 상태를 바꿔 보세요. 추정 IQE·EQE와 포톤 출력이 어떻게 달라지는지 확인할 수 있습니다.</p>
+    <div class="model-note"><span class="note-icon">i</span><p data-en="This first version uses a steady-state ABC recombination model with a geometry-based sidewall loss term. It is for comparing trends, not a calibrated TCAD prediction. Replace the illustrative defaults with measured values for your device.">첫 버전은 정상상태 ABC 재결합 모델에 형상 기반 측벽 손실 항을 더한 축약 모델입니다. 경향 비교용이며 보정된 TCAD 예측값은 아닙니다. 실제 소자 분석에는 해당 소자의 측정값을 넣어 주세요.</p></div>
+  </header>
+
+  <section class="led-layout" aria-label="LED model controls and results">
+    <aside class="panel led-controls">
+      <div class="section-head"><div><span class="step">01</span><h2 data-en="Device &amp; drive">소자와 구동</h2></div><button id="reset" class="text-button" type="button" data-en="Reset">초기화</button></div>
+      <div class="control-group">
+        <label for="size" data-en="Pixel width">픽셀 한 변</label><output id="size-out" for="size"></output>
+        <input id="size" type="range" min="1" max="100" step="1" value="10">
+        <small data-en="Square pixel; sidewall area / active volume = 4 / width">정사각 픽셀 · 측벽 면적/활성부 체적 = 4 / 폭</small>
+      </div>
+      <div class="control-group">
+        <label for="current" data-en="Current density">전류밀도</label><output id="current-out" for="current"></output>
+        <input id="current" type="range" min="0" max="100" step="1" value="65">
+        <small data-en="Log scale, 0.1–1,000 A/cm²">로그 눈금, 0.1–1,000 A/cm²</small>
+      </div>
+      <div class="control-group">
+        <label for="injection" data-en="Injection efficiency">주입 효율</label><output id="injection-out" for="injection"></output>
+        <input id="injection" type="range" min="50" max="100" step="1" value="95">
+        <small data-en="Fraction of terminal current reaching the active region">단자 전류 중 활성층에 도달하는 비율</small>
+      </div>
+
+      <div class="section-head subhead"><div><span class="step">02</span><h2 data-en="Recombination &amp; optics">재결합과 광학</h2></div></div>
+      <div class="control-group">
+        <label for="srv" data-en="Sidewall recombination velocity, S">측벽 표면 재결합 속도, S</label><output id="srv-out" for="srv"></output>
+        <input id="srv" type="range" min="2" max="6" step="0.05" value="4.3">
+        <small data-en="Log scale, cm/s; lower values represent better passivation">로그 눈금, cm/s · 낮을수록 패시베이션이 좋다고 가정</small>
+      </div>
+      <div class="control-group">
+        <label for="abulk" data-en="Bulk SRH coefficient, A">벌크 SRH 계수, A</label><output id="abulk-out" for="abulk"></output>
+        <input id="abulk" type="range" min="6" max="8" step="0.05" value="7">
+        <small data-en="Log scale, s⁻¹">로그 눈금, s⁻¹</small>
+      </div>
+      <div class="control-group split-control">
+        <div><label for="bscale" data-en="Radiative coefficient, B">방사 계수, B</label><output id="bscale-out" for="bscale"></output><input id="bscale" type="range" min="0.5" max="5" step="0.1" value="1"></div>
+        <div><label for="cscale" data-en="Auger coefficient, C">오제 계수, C</label><output id="cscale-out" for="cscale"></output><input id="cscale" type="range" min="0.1" max="10" step="0.1" value="1"></div>
+      </div>
+      <div class="control-group split-control">
+        <div><label for="lee" data-en="Light extraction, LEE">광추출효율, LEE</label><output id="lee-out" for="lee"></output><input id="lee" type="range" min="5" max="80" step="1" value="35"></div>
+        <div><label for="wavelength" data-en="Wavelength">파장</label><output id="wavelength-out" for="wavelength"></output><input id="wavelength" type="range" min="400" max="650" step="1" value="450"></div>
+      </div>
+      <details class="advanced"><summary data-en="Advanced assumptions">추가 가정</summary>
+        <div class="control-group"><label for="active" data-en="Total active-layer thickness">활성층 전체 두께</label><output id="active-out" for="active"></output><input id="active" type="range" min="10" max="100" step="1" value="30"><small data-en="Used to convert current density into carrier generation rate">전류밀도를 캐리어 생성률로 바꾸는 데 사용</small></div>
+      </details>
+    </aside>
+
+    <div class="led-results">
+      <section class="panel structure-panel">
+        <div class="section-head"><div><span class="step">A</span><h2 data-en="2D cross-section">2D 단면 구조</h2></div><span class="micro-tag" data-en="SCHEMATIC">개념도</span></div>
+        <div class="structure-graphic">
+          <svg id="cross-section" viewBox="0 0 720 300" role="img" aria-labelledby="cross-title cross-desc">
+            <title id="cross-title">마이크로 LED 단면 개념도</title><desc id="cross-desc">기판 위에 n형층, 양자우물 활성층, p형층과 투명전극이 있고, 측벽은 패시베이션 막으로 덮여 있습니다.</desc>
+            <defs><pattern id="substrate-pattern" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M0 12 12 0" stroke="#9ba7b2" stroke-width="1" opacity=".3"/></pattern></defs>
+            <rect x="70" y="238" width="580" height="42" rx="7" fill="#e9edf1" stroke="#c9d2db"/><rect x="70" y="238" width="580" height="42" rx="7" fill="url(#substrate-pattern)"/>
+            <text x="360" y="264" text-anchor="middle" class="svg-label" data-en="Substrate">기판</text>
+            <rect id="n-layer" x="155" y="190" width="410" height="48" fill="#8bb8ec"/><text x="360" y="220" text-anchor="middle" class="svg-label" data-en="n-GaN layer">n형층</text>
+            <rect id="mqw" x="155" y="178" width="410" height="12" fill="#f3a843"/><text id="mqw-label" x="360" y="174" text-anchor="middle" class="svg-label" data-en="Active region · MQW">활성층 · 양자우물</text>
+            <rect id="p-layer" x="155" y="120" width="410" height="58" fill="#a6dfd4"/><text x="360" y="153" text-anchor="middle" class="svg-label" data-en="p-GaN layer">p형층</text>
+            <rect id="contact-layer" x="155" y="108" width="410" height="12" rx="4" fill="#708b91"/><text x="360" y="101" text-anchor="middle" class="svg-small" data-en="Transparent contact">투명 전극</text>
+            <path id="passivation-left" d="M143 108h12v130h-12z" fill="#9584d8"/><path id="passivation-right" d="M565 108h12v130h-12z" fill="#9584d8"/>
+            <text x="99" y="132" text-anchor="middle" class="svg-small" data-en="Passivation">패시베이션</text><path d="M129 135 146 145" stroke="#7663bd" stroke-width="1.5"/>
+            <text x="600" y="154" class="svg-small" data-en="Sidewall defects">측벽 결함</text><path d="M592 158 574 169" stroke="#e36c5a" stroke-width="1.5"/>
+            <g id="defect-sites" fill="#e36c5a"><circle cx="151" cy="158" r="3"/><circle cx="568" cy="178" r="3"/><circle cx="151" cy="204" r="3"/></g>
+            <path d="M155 292v5m0-2h410m0-3v5" stroke="#53616d" stroke-width="1.5"/><text id="size-label" x="360" y="297" text-anchor="middle" class="svg-dim">10 μm</text>
+            <g id="photon-arrows" class="photon" fill="none" stroke="#e4a42e" stroke-width="2"><path d="M324 181v-45"/><path d="m319 143 5-7 5 7"/><path d="M360 181v-62"/><path d="m355 125 5-7 5 7"/><path d="M396 181v-45"/><path d="m391 143 5-7 5 7"/></g>
+          </svg>
+        </div>
+        <div class="legend-row"><span><i class="swatch sw-active"></i><span data-en="Quantum wells">양자우물</span></span><span><i class="swatch sw-pass"></i><span data-en="Passivation layer">패시베이션막</span></span><span><i class="swatch sw-defect"></i><span data-en="Surface defect sites">표면 결함 위치</span></span></div>
+        <p class="structure-caption" data-en="The sidewall loss is approximated from pixel perimeter / active area (4 / width for a square pixel). Layer thicknesses are schematic, not to scale.">측벽 손실은 픽셀 둘레/활성 면적(정사각형은 4/폭)으로 근사합니다. 층 두께는 이해를 돕기 위한 그림이며 실제 비율과 다릅니다.</p>
+      </section>
+
+      <section class="stats led-stats" aria-live="polite">
+        <article class="stat-card stat-primary"><span data-en="External quantum efficiency · EQE">외부양자효율 · EQE</span><strong id="eqe-value">—</strong><small data-en="photons out / electrons in">출광 포톤 / 주입 전자</small></article>
+        <article class="stat-card"><span data-en="Internal quantum efficiency · IQE">내부양자효율 · IQE</span><strong id="iqe-value">—</strong><small data-en="radiative recombination share">방사 재결합 비율</small></article>
+        <article class="stat-card"><span data-en="Photon output">포톤 출력</span><strong id="photon-value">—</strong><small data-en="photons per second">초당 포톤 수</small></article>
+        <article class="stat-card"><span data-en="Optical power">광출력</span><strong id="power-value">—</strong><small id="current-value">—</small></article>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="section-head"><div><span class="step">B</span><h2 data-en="Efficiency vs. current density">전류밀도에 따른 효율</h2></div><span class="chart-legend"><i></i><span data-en="EQE">EQE</span></span></div>
+        <p class="chart-intro" data-en="The dot marks the current setting. Lower pixels are more sensitive to the same sidewall recombination velocity.">점은 현재 설정입니다. 같은 측벽 재결합 속도에서도 픽셀이 작을수록 표면 손실 영향이 커집니다.</p>
+        <canvas id="eqe-chart" aria-label="전류밀도에 따른 EQE 그래프"></canvas>
+        <div class="chart-foot"><span data-en="Current density (A/cm²) · log scale">전류밀도 (A/cm²) · 로그 눈금</span><span id="surface-loss">—</span></div>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="section-head"><div><span class="step">B2</span><h2 data-en="Photon output vs. input current">입력 전류에 따른 포톤 출광</h2></div><span class="chart-legend photon-legend"><i></i><span data-en="Photons / second">포톤 / 초</span></span></div>
+        <p class="chart-intro" data-en="This is the estimated external photon rate leaving the pixel. The dot marks the selected operating point.">픽셀 밖으로 나오는 외부 포톤률 추정치입니다. 점은 선택한 동작 지점을 표시합니다.</p>
+        <canvas id="photon-chart" aria-label="입력 전류에 따른 포톤 출력 그래프"></canvas>
+        <div class="chart-foot"><span data-en="Input current (A) · log scale">입력 전류 (A) · 로그 눈금</span><span data-en="Output photons / second · log scale">출광 포톤 / 초 · 로그 눈금</span></div>
+      </section>
+
+      <section class="panel equation-panel">
+        <div class="section-head"><div><span class="step">C</span><h2 data-en="What the model calculates">계산에 쓰는 모델</h2></div></div>
+        <div class="equations"><code>G = A<sub>eff</sub>n + Bn² + Cn³</code><code>A<sub>eff</sub> = A<sub>bulk</sub> + S · 4 / w</code><code>IQE = Bn² / G</code><code>EQE = η<sub>inj</sub> · IQE · LEE</code></div>
+        <p data-en="At each current density, the model solves for the steady-state carrier density n. It then estimates radiative output, including bulk and sidewall Shockley–Read–Hall losses and Auger recombination.">각 전류밀도에서 정상상태 캐리어 밀도 n을 구합니다. 벌크·측벽 쇼클리–리드–홀(SRH) 손실과 오제 재결합을 포함해 방사 출력을 추정합니다.</p>
+        <details class="limits"><summary data-en="Scope and limitations">범위와 한계</summary><ul>
+          <li data-en="Uniform carrier density and current spreading are assumed. Leakage, self-heating, polarization fields, photon recycling and wavelength-dependent extraction are not solved.">캐리어 밀도와 전류가 균일하다고 가정합니다. 누설, 발열, 분극 전계, 광자 재활용, 파장별 광추출은 계산하지 않습니다.</li>
+          <li data-en="The square-pixel perimeter/area term is a first-order geometry estimate. Nanowire or non-square devices need a matching geometry model.">정사각 픽셀의 둘레/면적 항은 1차 형상 근사입니다. 나노와이어나 비정사각 소자는 형상에 맞게 모델을 바꿔야 합니다.</li>
+          <li data-en="IQE, injection efficiency and light extraction efficiency are distinct. EQE combines all three; measured EQE data should be used to calibrate this model.">IQE·주입 효율·광추출효율은 서로 다른 값입니다. EQE는 세 요소를 결합하며, 모델 보정에는 측정 EQE가 필요합니다.</li>
+        </ul></details>
+      </section>
+    </div>
+  </section>
+  <p class="page-credit">설계 경향 탐색용 축약 모델 · <a href="https://github.com/heekeunlee/microled-efficiency-simulator">GitHub에서 코드 보기</a></p>
+</main>
+
+<footer><div class="wrap"><span>Micro-LED Efficiency Simulator · Reduced model</span><span><a href="https://github.com/heekeunlee/microled-efficiency-simulator">GitHub</a></span></div></footer>
+<script src="app.js"></script>
+</body>
+</html>
