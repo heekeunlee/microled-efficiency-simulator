@@ -5,7 +5,7 @@
   const q = 1.602176634e-19;
   const h = 6.62607015e-34;
   const c = 299792458;
-  const defaults = { size: 10, current: 65, injection: 95, srv: 4.3, abulk: 7, bscale: 1, cscale: 1, lee: 35, wavelength: 450, active: 30 };
+  const defaults = { size: 10, current: 65, injection: 95, srv: 4.3, abulk: 7, bscale: 1, cscale: 1, lee: 35, wavelength: 450, active: 30, substrate: 150, nlayer: 600, barrier: 10, well: 3, wells: 5, ebl: 20, player: 120, tco: 80, passivation: 12 };
   const sliders = Object.keys(defaults);
   let state = null;
 
@@ -21,6 +21,7 @@
       lee: Number($('lee').value) / 100,
       wavelengthNm: Number($('wavelength').value),
       activeNm: Number($('active').value),
+      layers: Object.fromEntries(['substrate', 'nlayer', 'barrier', 'well', 'wells', 'ebl', 'player', 'tco', 'passivation'].map((id) => [id, Number($(id).value)])),
     };
   }
 
@@ -93,6 +94,7 @@
     $('lee-out').textContent = `${(p.lee * 100).toFixed(0)}%`;
     $('wavelength-out').textContent = `${p.wavelengthNm} nm`;
     $('active-out').textContent = `${p.activeNm} nm`;
+    Object.entries(p.layers).forEach(([id, value]) => { $(`${id}-out`).textContent = `${value} ${id === 'wells' ? '개' : 'nm'}`; });
 
     $('eqe-value').textContent = `${(result.eqe * 100).toFixed(2)}%`;
     $('iqe-value').textContent = `${(result.iqe * 100).toFixed(1)}%`;
@@ -101,25 +103,70 @@
     $('current-value').textContent = `${prettyCurrent(current)} · ${p.wavelengthNm} nm`;
     $('surface-loss').textContent = `전체 재결합 중 측벽 몫 ${(result.surfaceShare * 100).toFixed(1)}%`;
     $('size-label').textContent = `${p.sizeUm} μm`;
-    updateStructure(p.sizeUm);
+    updateStructure(p);
     state = { p, result };
   }
 
-  function updateStructure(sizeUm) {
+  function wavelengthColor(nm) {
+    let r = 0, g = 0, b = 0;
+    if (nm < 440) { r = nm < 420 ? 0.3 * (nm - 380) / 40 : (440 - nm) / 60; b = 1; }
+    else if (nm < 490) { g = (nm - 440) / 50; b = 1; }
+    else if (nm < 510) { g = 1; b = -(nm - 510) / 20; }
+    else if (nm < 580) { r = (nm - 510) / 70; g = 1; }
+    else if (nm < 645) { r = 1; g = -(nm - 645) / 65; }
+    else { r = 1; }
+    const factor = nm < 420 ? 0.3 + 0.7 * (nm - 380) / 40 : nm > 700 ? 0.3 + 0.7 * (750 - nm) / 50 : 1;
+    const channel = (v) => Math.round(255 * Math.pow(Math.max(0, v * factor), 0.8));
+    const hex = (v) => channel(v).toString(16).padStart(2, '0');
+    const colorName = nm < 450 ? '보라' : nm < 495 ? '청색' : nm < 520 ? '청록' : nm < 565 ? '녹색' : nm < 590 ? '황록' : nm < 625 ? '주황' : '적색';
+    return { color: `#${hex(r)}${hex(g)}${hex(b)}`, name: colorName };
+  }
+
+  function updateStructure(p) {
+    const { sizeUm, layers, wavelengthNm } = p;
     const width = 120 + (sizeUm - 1) / 99 * 340;
     const left = 360 - width / 2;
     const right = left + width;
-    [['n-layer', 190, 48], ['mqw', 178, 12], ['p-layer', 120, 58], ['contact-layer', 108, 12]].forEach(([id, y, height]) => {
-      const el = $(id); el.setAttribute('x', left); el.setAttribute('width', width);
+    const substrateH = 20 + (layers.substrate - 50) / 450 * 26;
+    $('substrate-layer').setAttribute('height', substrateH);
+    $('substrate-layer').setAttribute('y', 280 - substrateH);
+    $('substrate-pattern-layer').setAttribute('height', substrateH);
+    $('substrate-pattern-layer').setAttribute('y', 280 - substrateH);
+    const nH = 28 + (layers.nlayer - 100) / 1400 * 35;
+    const activeStackNm = layers.wells * (layers.well + layers.barrier);
+    const mqwH = 12 + activeStackNm / 224 * 18;
+    const eblH = 5 + (layers.ebl - 5) / 35 * 7;
+    const pH = 24 + (layers.player - 50) / 250 * 27;
+    const tcoH = 7 + (layers.tco - 20) / 130 * 9;
+    const bottom = 238;
+    const nY = bottom - nH, mqwY = nY - mqwH, eblY = mqwY - eblH, pY = eblY - pH, tcoY = pY - tcoH;
+    [['n-layer', nY, nH], ['mqw', mqwY, mqwH], ['ebl-layer', eblY, eblH], ['p-layer', pY, pH], ['contact-layer', tcoY, tcoH]].forEach(([id, y, height]) => {
+      const el = $(id); el.setAttribute('x', left); el.setAttribute('y', y); el.setAttribute('width', width); el.setAttribute('height', height);
     });
-    $('passivation-left').setAttribute('d', `M${left - 12} 108h12v130h-12z`);
-    $('passivation-right').setAttribute('d', `M${right} 108h12v130h-12z`);
+    $('n-label').setAttribute('y', nY + nH / 2 + 5); $('p-label').setAttribute('y', pY + pH / 2 + 5);
+    $('mqw-label').setAttribute('y', mqwY - 3); $('mqw-label').textContent = `MQW · ${layers.wells} wells`;
+    $('ebl-label').setAttribute('y', eblY + eblH - 1);
+    $('contact-label').setAttribute('y', tcoY - 3);
+    $('well-lines').innerHTML = Array.from({ length: layers.wells - 1 }, (_, i) => `<path d="M${left} ${mqwY + (i + 1) * mqwH / layers.wells}h${width}"/>`).join('');
+    const passW = 4 + (layers.passivation - 5) / 35 * 10;
+    $('passivation-left').setAttribute('d', `M${left - passW} ${tcoY}h${passW}v${bottom - tcoY}h-${passW}z`);
+    $('passivation-right').setAttribute('d', `M${right} ${tcoY}h${passW}v${bottom - tcoY}h-${passW}z`);
+    $('metal-left').setAttribute('d', `M${left} ${tcoY - 8}h${width * 0.18}v8h-${width * 0.18}z`);
+    $('metal-right').setAttribute('d', `M${right - width * 0.18} ${tcoY - 8}h${width * 0.18}v8h-${width * 0.18}z`);
     $('defect-sites').innerHTML = `<circle cx="${left - 3}" cy="158" r="3"/><circle cx="${right + 3}" cy="178" r="3"/><circle cx="${left - 3}" cy="204" r="3"/>`;
+    const glow = wavelengthColor(wavelengthNm);
+    $('photon-arrows').setAttribute('stroke', glow.color);
+    $('mqw').setAttribute('fill', glow.color);
+    $('wavelength-swatch').style.backgroundColor = glow.color;
+    $('wavelength-swatch').style.boxShadow = `0 0 14px ${glow.color}`;
+    $('wavelength-color').textContent = `${glow.name} · ${wavelengthNm} nm`;
+    $('wavelength-color').style.color = glow.color;
     $('photon-arrows').innerHTML = [0.42, 0.5, 0.58].map((f, i) => {
       const x = 360 + (f - 0.5) * width;
       const rise = i === 1 ? 62 : 45, tip = 181 - rise;
       return `<path d="M${x} 181v-${rise}"/><path d="m${x - 5} ${tip + 7} 5-7 5 7"/>`;
     }).join('');
+    $('size-label').textContent = `${sizeUm} μm`;
   }
 
   function drawChart() {

@@ -27,6 +27,8 @@ a{color:#087b72;text-decoration:none}
 .control-group output{float:right;color:#087b72;font-size:.8rem;font-weight:800;font-variant-numeric:tabular-nums}
 .control-group input[type=range]{display:block;width:100%;height:18px;margin:5px 0 2px;accent-color:#118c83;cursor:pointer}
 .control-group small{display:block;color:#77838e;font-size:.69rem;line-height:1.4}
+.spectrum-preview{display:flex;align-items:center;gap:8px;margin-top:7px;padding:8px 10px;border:1px solid #e8edf0;border-radius:9px;background:#fafcfd}.spectrum-preview>span{width:24px;height:24px;flex:0 0 24px;border-radius:50%;background:#397cff;box-shadow:0 0 14px #397cff}.spectrum-preview strong{font-size:.78rem;color:#397cff}.spectrum-preview small{margin-left:auto;font-size:.65rem!important}
+.advanced-intro{margin:-4px 0 12px;color:#74818b;font-size:.72rem}
 .subhead{margin-top:19px;margin-bottom:12px}.subhead .step{background:#f1ecff;color:#6c4fc1}
 .split-control{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .split-control>div{min-width:0}.split-control input{margin-top:9px!important}
@@ -35,7 +37,7 @@ a{color:#087b72;text-decoration:none}
 .micro-tag{padding:4px 8px;border-radius:20px;background:#f0f4f6;color:#7b8792;font-size:.62rem;font-weight:800;letter-spacing:.08em}
 .structure-graphic{overflow:hidden;border-radius:12px;background:linear-gradient(180deg,#f8fbfc,#f2f6f7)}
 .structure-graphic svg{display:block;width:100%;height:auto;min-height:175px}
-.svg-label{fill:#293d4d;font:600 14px system-ui,sans-serif}.svg-small{fill:#63727e;font:600 11px system-ui,sans-serif}.svg-dim{fill:#53616d;font:700 12px system-ui,sans-serif}
+.svg-label{fill:#293d4d;font:600 14px system-ui,sans-serif}.svg-small{fill:#63727e;font:600 11px system-ui,sans-serif}.svg-tiny{fill:#574456;font:700 8px system-ui,sans-serif}.svg-dim{fill:#53616d;font:700 12px system-ui,sans-serif}
 .photon{animation:photon-rise 1.8s ease-in-out infinite alternate}.photon:nth-of-type(2){animation-delay:.35s}
 @keyframes photon-rise{from{transform:translateY(5px);opacity:.55}to{transform:translateY(-9px);opacity:1}}
 .legend-row{display:flex;flex-wrap:wrap;gap:14px;margin:12px 2px 5px;color:#61707d;font-size:.72rem}.legend-row>span{display:inline-flex;align-items:center;gap:6px}
