@@ -103,12 +103,12 @@
           <div><button id="zoom-out" type="button" aria-label="단면 축소" title="축소">−</button><output id="zoom-level">100%</output><button id="zoom-in" type="button" aria-label="단면 확대" title="확대">+</button><button id="zoom-reset" type="button">초기화</button></div>
         </div>
         <div class="structure-graphic">
-          <svg id="cross-section" viewBox="0 0 1000 450" role="img" aria-labelledby="cross-title cross-desc">
+          <svg id="cross-section" viewBox="0 0 1000 580" role="img" aria-labelledby="cross-title cross-desc">
             <title id="cross-title">마이크로 LED 에피택시·메사 단면 구조</title><desc id="cross-desc">사파이어부터 n-GaN, 전자 확산층, 스페이서, 응력 완화 초격자, 다중양자우물, 전자 차단층, p-GaN, ITO와 금속 전극까지의 단면입니다. 메사 측벽에는 식각 손상 영역과 이중 패시베이션막이 표시됩니다.</desc>
             <defs><pattern id="substrate-pattern" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M0 12 12 0" stroke="#9ba7b2" stroke-width="1" opacity=".3"/></pattern><pattern id="damage-pattern" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 0 6 6M6 0 0 6" stroke="#c94b4b" stroke-width="1" opacity=".55"/></pattern></defs>
             <g id="device-layers"></g><g id="sidewall-structure"></g><g id="device-callouts"></g>
             <g id="photon-arrows" class="photon" fill="none" stroke="#e4a42e" stroke-width="3"></g>
-            <path id="mesa-dimension" d="M350 426v6m0-3h240m0-3v6" stroke="#53616d" stroke-width="1.5"/><text id="size-label" x="500" y="444" text-anchor="middle" class="svg-dim">10 μm mesa</text>
+            <path id="mesa-dimension" d="M350 530v6m0-3h240m0-3v6" stroke="#53616d" stroke-width="1.5"/><text id="size-label" x="500" y="555" text-anchor="middle" class="svg-dim">10 μm mesa</text>
           </svg>
         </div>
         <div class="legend-row"><span><i class="swatch sw-substrate"></i>기판·버퍼</span><span><i class="swatch sw-n"></i>n형 에피층</span><span><i id="active-swatch" class="swatch sw-active"></i>InGaN 우물 / GaN 장벽</span><span><i class="swatch sw-ebl"></i>p-AlGaN EBL</span><span><i class="swatch sw-p"></i>p형 에피층</span><span><i class="swatch sw-contact"></i>ITO·금속</span><span><i class="swatch sw-pass"></i>측벽 패시베이션</span><span><i class="swatch sw-defect"></i>식각 손상대</span></div>

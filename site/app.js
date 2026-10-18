@@ -131,8 +131,8 @@
   function updateStructure(p) {
     const { sizeUm, layers, wavelengthNm } = p;
     const emissionColor = wavelengthColor(wavelengthNm).color;
-    const fullW = 300, fullL = 350, fullR = fullL + fullW, mesaW = fullW * layers.mesa / 100;
-    const mesaL = 500 - mesaW / 2, mesaR = 500 + mesaW / 2, bottom = 385;
+    const fullW = 400, fullL = 300, fullR = fullL + fullW, mesaW = fullW * layers.mesa / 100;
+    const mesaL = 500 - mesaW / 2, mesaR = 500 + mesaW / 2, bottom = 400;
     const H = {
       substrate: 30 + (layers.substrate - 50) / 950 * 16, nucleation: 5 + (layers.nucleation - 10) / 90 * 4,
       buffer: 14 + (layers.buffer - 300) / 1700 * 12, nlayer: 28 + (layers.nlayer - 100) / 2900 * 30,
@@ -194,8 +194,8 @@
     notes.push({ title: '메사 식각 프로파일', detail: `${layers.angle}° 측벽 · 폭 ${layers.mesa}%`, color: '#56616b', cy: topY + sidewallH * .82, side: 'right', key: 'profile', anchorX: mesaR - sideShift * .82 });
     function drawNotes(sideName) {
       const items = notes.filter((n) => n.side === sideName).sort((a, b) => a.cy - b.cy);
-      const tx = sideName === 'left' ? 16 : 690, lx = sideName === 'left' ? 330 : 680;
-      const minSlot = Math.max(48, topY + 2), maxSlot = bottom - 25, gap = Math.min(25, (maxSlot - minSlot) / Math.max(1, items.length - 1));
+      const tx = sideName === 'left' ? 16 : 730, lx = sideName === 'left' ? 290 : 720;
+      const minSlot = 42, maxSlot = bottom + 80, gap = Math.min(28, (maxSlot - minSlot) / Math.max(1, items.length - 1));
       const slots = items.map((item) => Math.max(minSlot, Math.min(maxSlot, item.cy)));
       for (let i = 1; i < slots.length; i++) slots[i] = Math.max(slots[i], slots[i - 1] + gap);
       if (slots.length && slots[slots.length - 1] > maxSlot) {
@@ -205,7 +205,7 @@
       return items.map((item, i) => {
         const edge = item.anchorX ?? (sideName === 'left' ? fullL : mesaR);
         const elbow = sideName === 'left' ? Math.min(lx, edge - 8) : Math.max(lx, edge + 8);
-        const labelEdge = sideName === 'left' ? 338 : 684;
+        const labelEdge = sideName === 'left' ? 296 : 724;
         return `<g class="structure-callout" data-structure-key="${item.key}" tabindex="0" role="button" aria-label="${item.title}: ${item.detail}"><path d="M${edge} ${item.cy}H${elbow}L${labelEdge} ${slots[i]}" fill="none" stroke="${item.color}" stroke-width="1.5"/><circle cx="${edge}" cy="${item.cy}" r="3" fill="${item.color}"/><text x="${tx}" y="${slots[i] - 2}" class="svg-callout-title">${item.title}</text><text x="${tx}" y="${slots[i] + 12}" class="svg-callout-detail">${item.detail}</text></g>`;
       }).join('');
     }
@@ -224,8 +224,9 @@
       const rise = i === 1 ? 82 : 62, tip = origin - rise;
       return `<path d="M${x} ${origin}v-${rise}"/><path d="m${x - 5} ${tip + 7} 5-7 5 7"/>`;
     }).join('');
-    $('mesa-dimension').setAttribute('d', `M${mesaL} 426v6m0-3h${mesaW}m0-3v6`);
+    $('mesa-dimension').setAttribute('d', `M${mesaL} 530v6m0-3h${mesaW}m0-3v6`);
     $('size-label').textContent = `${sizeUm} μm pixel · mesa ${Math.round(mesaW / fullW * 100)}%`;
+    $('size-label').setAttribute('y', '555');
   }
 
   function updateStructureHighlight(hoverKey) {
