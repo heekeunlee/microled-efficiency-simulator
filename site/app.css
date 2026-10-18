@@ -5,6 +5,7 @@ a{color:#087b72;text-decoration:none}
 .wrap{width:min(1260px,calc(100% - 40px));margin:0 auto}
 .nav{position:sticky;top:0;z-index:10;background:#ffffffed;border-bottom:1px solid #e5e9ef;backdrop-filter:blur(12px)}
 .nav>.wrap{min-height:68px;display:flex;align-items:center}
+.nav>.wrap{justify-content:space-between}.nav-3d{padding:8px 11px;border:1px solid #b8ddd6;border-radius:8px;background:#f2fbf9;color:#087b72;font-size:.76rem;font-weight:750}.nav-3d:hover{background:#e2f5f0}
 .brand{display:flex;align-items:center;gap:11px;color:#253746}
 .brand-mark{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:#e8f7f4;color:#087b72;font-size:1.45rem;font-weight:800}
 .bt b,.bt small{display:block}.bt b{font-size:.94rem;line-height:1.2}.bt small{margin-top:3px;color:#88939d;font-size:.58rem;font-weight:800;letter-spacing:.14em}

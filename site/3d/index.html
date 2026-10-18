@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10212b">
+  <meta name="description" content="픽셀 폭과 깊이, 측벽 재결합을 반영하는 마이크로 LED 3D 형상 기반 축약 시뮬레이터">
+  <title>Micro LED 3D 효율 시뮬레이터</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="../">μLED <span>3D LAB</span></a><a class="back-link" href="../">2D 시뮬레이터로 돌아가기 ↗</a></header>
+  <main class="shell">
+    <section class="intro">
+      <p class="eyebrow">GEOMETRY-AWARE · REDUCED MODEL</p>
+      <h1>마이크로 LED 3D 효율 시뮬레이터</h1>
+      <p>픽셀의 폭과 깊이, 측벽 상태를 설정하고 입체 구조와 추정 효율을 살펴보세요.</p>
+      <div class="model-note">이 도구는 3D 형상의 둘레/면적 비를 반영하는 ABC 축약 모델입니다. 전계·전류 확산·광선 추적을 푸는 TCAD/FDTD 해석은 아닙니다.</div>
+    </section>
+
+    <section class="workspace">
+      <aside class="panel controls">
+        <div class="panel-heading"><div><span class="step">01</span><h2>소자 형상과 구동</h2></div><button id="reset" class="quiet" type="button">초기화</button></div>
+        <div class="field"><label for="width">픽셀 폭, W <output id="width-out"></output></label><div class="range-number"><input id="width" type="range" min="1" max="100" step="1" value="20"><input class="numeric" type="number" min="1" max="100" step="1" value="20" aria-label="픽셀 폭 μm"></div></div>
+        <div class="field"><label for="depth">픽셀 깊이, D <output id="depth-out"></output></label><div class="range-number"><input id="depth" type="range" min="1" max="100" step="1" value="15"><input class="numeric" type="number" min="1" max="100" step="1" value="15" aria-label="픽셀 깊이 μm"></div></div>
+        <div class="field"><label for="active">MQW 유효 두께 <output id="active-out"></output></label><div class="range-number"><input id="active" type="range" min="5" max="100" step="1" value="30"><input class="numeric" type="number" min="5" max="100" step="1" value="30" aria-label="MQW 유효 두께 nm"></div></div>
+        <div class="field"><label for="density">전류밀도 <output id="density-out"></output></label><input id="density" type="range" min="0" max="100" step="1" value="0"><small>로그 조절 · 0.1–1,000 A/cm²</small></div>
+        <div class="field"><label for="srv">측벽 재결합 속도, S <output id="srv-out"></output></label><div class="range-number"><input id="srv" type="range" min="1" max="6" step="0.05" value="2"><input class="numeric" type="number" min="1" max="6" step="0.05" value="2" aria-label="측벽 재결합 속도 log₁₀ cm/s"></div><small>로그 조절 · cm/s</small></div>
+        <details class="advanced"><summary>재결합·광학 계수</summary>
+          <div class="field"><label for="abulk">벌크 SRH 계수, A <output id="abulk-out"></output></label><div class="range-number"><input id="abulk" type="range" min="5" max="8" step="0.00001" value="6.69897"><input class="numeric" type="number" min="5" max="8" step="0.00001" value="6.69897" aria-label="벌크 SRH 계수 log₁₀ s⁻¹"></div><small>로그 조절 · s⁻¹</small></div>
+          <div class="field"><label for="b">방사 계수, B <output id="b-out"></output></label><div class="range-number"><input id="b" type="range" min="0.5" max="5" step="0.1" value="5"><input class="numeric" type="number" min="0.5" max="5" step="0.1" value="5" aria-label="방사 계수 배율"></div><small>×10⁻¹¹ cm³/s</small></div>
+          <div class="field"><label for="c">오제 계수, C <output id="c-out"></output></label><div class="range-number"><input id="c" type="range" min="0.1" max="10" step="0.1" value="0.1"><input class="numeric" type="number" min="0.1" max="10" step="0.1" value="0.1" aria-label="오제 계수 배율"></div><small>×10⁻³⁰ cm⁶/s</small></div>
+          <div class="field"><label for="injection">주입 효율 <output id="injection-out"></output></label><input id="injection" type="range" min="50" max="100" step="1" value="95"></div>
+          <div class="field"><label for="lee">광추출효율, LEE <output id="lee-out"></output></label><input id="lee" type="range" min="5" max="80" step="1" value="70"></div>
+          <div class="field"><label for="wavelength">출광 파장 <output id="wavelength-out"></output></label><input id="wavelength" type="range" min="380" max="750" step="1" value="450"><div class="spectrum"><i id="spectrum-swatch"></i><span id="spectrum-label">청색</span></div></div>
+        </details>
+        <button id="run" class="run-button" type="button">시뮬레이션 실행</button>
+        <p id="status" class="status" role="status">형상과 조건을 설정한 뒤 실행하세요.</p>
+      </aside>
+
+      <div class="results">
+        <section class="panel scene-panel">
+          <div class="panel-heading"><div><span class="step">A</span><h2>입체 적층 구조</h2></div><div class="scene-tools"><button id="rotate-left" type="button" aria-label="왼쪽 회전">↶</button><button id="rotate-right" type="button" aria-label="오른쪽 회전">↷</button><button id="zoom-out" type="button" aria-label="축소">−</button><button id="zoom-in" type="button" aria-label="확대">+</button></div></div>
+          <canvas id="scene" aria-label="마우스나 손가락으로 회전할 수 있는 마이크로 LED 3차원 적층 구조"></canvas>
+          <p class="hint">드래그해 회전 · 휠 또는 버튼으로 확대/축소 · 두께는 구조를 보기 쉽도록 과장했습니다.</p>
+          <div class="legend"><span><i style="--sw:#dce6ee"></i>기판</span><span><i style="--sw:#6095ce"></i>n형층</span><span><i style="--sw:#f0aa4a"></i>MQW</span><span><i style="--sw:#cc8da9"></i>EBL</span><span><i style="--sw:#75c4b5"></i>p형층</span><span><i style="--sw:#967fe0"></i>측벽 패시베이션</span></div>
+        </section>
+        <section id="prompt" class="panel prompt"><strong>시뮬레이션 결과 대기 중</strong><span>설정한 픽셀 형상과 재결합 조건으로 결과를 계산하려면 실행 버튼을 누르세요.</span></section>
+        <section id="outputs" class="outputs" hidden>
+          <div class="metrics"><article><span>외부양자효율 EQE</span><strong id="eqe">—</strong></article><article><span>내부양자효율 IQE</span><strong id="iqe">—</strong></article><article><span>측벽 SRH 계수</span><strong id="aside-value">—</strong></article><article><span>초당 출광 포톤</span><strong id="photons">—</strong></article><article><span>추정 전류효율</span><strong id="cda">—</strong></article><article><span>추정 정면 휘도</span><strong id="luminance">—</strong></article></div>
+          <section class="panel chart-panel"><div class="panel-heading"><div><span class="step">B</span><h2>전류밀도에 따른 효율</h2></div><span>EQE (%)</span></div><canvas id="chart" aria-label="전류밀도별 EQE 예측 그래프"></canvas><div class="chart-foot"><span>점은 현재 설정한 동작점입니다.</span><span>J (A/cm²), 로그 축</span></div></section>
+          <section class="panel equation"><h2>3D 형상에서 측벽 손실과 광도를 계산하는 법</h2><code>A<sub>eff</sub> = A<sub>bulk</sub> + S · P/A<br>직사각형 픽셀: P/A = 2(1/W + 1/D)<br>G = A<sub>eff</sub>n + Bn² + Cn³<br>EQE = η<sub>inj</sub> · IQE · LEE<br>η<sub>I</sub> = EQE · 683V(λ)hc/(πqλ)　[cd/A]<br>L = η<sub>I</sub> · 10⁴J　[cd/m²]</code><p>MQW 활성부의 옆면적/체적은 측벽 둘레/픽셀 면적 P/A로 정리됩니다. 정사각 픽셀(W=D)에서는 기존 4S/W 항으로 돌아갑니다. 전류효율은 단색광과 Lambertian 출광, CIE 명소시 V(λ)를 가정한 추정치이며, 휘도는 전류밀도를 A/m²로 환산합니다.</p><p>단면 층의 실제 전기·광학 분포를 해석하는 3D TCAD/FDTD 결과는 아닙니다.</p><p class="source">근거: <a href="https://onlinelibrary.wiley.com/doi/10.1002/lpor.202500791" target="_blank" rel="noreferrer">마이크로 LED 측벽 표면 재결합과 ABC 모델 (Laser &amp; Photonics Reviews, 2025)</a> · <a href="https://cie.co.at/datatable/cie-spectral-luminous-efficiency-photopic-vision" target="_blank" rel="noreferrer">CIE V(λ)</a></p></section>
+        </section>
+      </div>
+    </section>
+    <footer>제작자 이희근 · 3D 형상 기반 축약 모델 · <a href="mailto:clzmyiz@gmail.com">clzmyiz@gmail.com</a> · <a href="../">2D 시뮬레이터</a> · © 2026 이희근 · 복제·수정·재배포·상업적 이용은 사전 서면 허가가 필요합니다. <a href="https://github.com/heekeunlee/microled-efficiency-simulator/blob/main/COPYRIGHT.md" target="_blank" rel="noreferrer">이용 안내</a></footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

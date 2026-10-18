@@ -29,6 +29,8 @@ photon_rate = input_current · EQE / elementary_charge
 
 `site/` 폴더는 GitHub Actions를 통해 GitHub Pages로 배포됩니다.
 
+3D 형상 버전: https://heekeunlee.github.io/microled-efficiency-simulator/3d/ (`site/3d/`). 폭과 깊이를 분리한 직사각형 픽셀의 측벽 둘레/면적 비를 ABC 축약식에 반영합니다. 입체 뷰는 드래그로 회전할 수 있습니다. 이 버전도 전계·전류 확산·광선 추적을 계산하는 3D TCAD/FDTD 해석은 아닙니다.
+
 ## 저작권 및 이용
 
 이 저장소의 독창적인 소스 코드와 문서는 이희근에게 저작권이 있습니다. 별도의 허가나 라이선스가 부여되지 않았으며, 복제·수정·재배포 또는 상업적 이용은 사전 서면 허가가 필요합니다. 자세한 내용은 [COPYRIGHT.md](COPYRIGHT.md)를 확인해 주세요. 문헌 링크와 제3자 자료에는 각 권리자의 조건이 적용됩니다.
