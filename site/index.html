@@ -93,6 +93,10 @@
         <div class="control-group"><label for="damage" data-en="Etch damage depth">식각 손상층 깊이</label><output id="damage-out"></output><input id="damage" type="range" min="20" max="1500" step="20" value="200"></div>
         <div class="computed-layer">모델 유효 활성층 두께 <strong id="active-out">—</strong><small>양자우물 수 × (well + barrier) · 전류밀도→캐리어 생성률 계산에 사용</small></div>
       </details>
+      <div class="run-action">
+        <button id="run-simulation" type="button">시뮬레이션 실행</button>
+        <small id="run-status" role="status">입력값을 설정한 뒤 실행 버튼을 눌러 결과를 확인하세요.</small>
+      </div>
     </aside>
 
     <div class="led-results">
@@ -120,6 +124,11 @@
         </ul></details>
       </section>
 
+      <section id="run-prompt" class="panel run-prompt" aria-live="polite">
+        <strong>시뮬레이션을 실행해 주세요</strong>
+        <span>왼쪽에서 소자와 구동 조건을 설정한 뒤 버튼을 누르면 효율과 출광 그래프를 계산합니다.</span>
+      </section>
+      <div id="sim-results" class="sim-results" hidden>
       <section class="stats led-stats" aria-live="polite">
         <article class="stat-card stat-primary"><span data-en="External quantum efficiency · EQE">외부양자효율 · EQE</span><strong id="eqe-value">—</strong><small data-en="photons out / electrons in">출광 포톤 / 주입 전자</small></article>
         <article class="stat-card"><span data-en="Internal quantum efficiency · IQE">내부양자효율 · IQE</span><strong id="iqe-value">—</strong><small data-en="radiative recombination share">방사 재결합 비율</small></article>
@@ -156,6 +165,7 @@
         <canvas id="luminance-chart" aria-label="전류밀도에 따른 추정 정면 휘도 그래프"></canvas>
         <div class="chart-foot"><span data-en="Current density (A/cm²) · log scale">전류밀도 (A/cm²) · 로그 눈금</span><span data-en="Normal luminance (cd/m²) · log scale">정면 휘도 (cd/m²) · 로그 눈금</span></div>
       </section>
+      </div>
       </div>
 
       <section class="panel graph-methods" aria-labelledby="graph-methods-title">

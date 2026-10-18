@@ -92,14 +92,7 @@
     return (amps * 1e9).toPrecision(3) + ' nA';
   }
 
-  function updateOutputs(p, result) {
-    const widthCm = p.sizeUm * 1e-4;
-    const areaCm2 = widthCm * widthCm;
-    const current = p.currentDensity * areaCm2;
-    const photonRate = current / q * result.eqe;
-    const photonEnergy = h * c / (p.wavelengthNm * 1e-9);
-    const power = photonRate * photonEnergy;
-
+  function updateInputDisplays(p) {
     $('size-out').textContent = `${p.sizeUm} μm`;
     $('current-out').textContent = `${p.currentDensity.toPrecision(3)} A/cm²`;
     $('injection-out').textContent = `${(p.injection * 100).toFixed(0)}%`;
@@ -114,6 +107,16 @@
       const unit = ['srl', 'wells'].includes(id) ? '주기' : id === 'mesa' || id === 'indium' || id === 'aluminum' ? '%' : id === 'angle' ? '°' : ['ndoping', 'pdoping'].includes(id) ? 'log₁₀ cm⁻³' : id === 'itoRs' ? 'Ω/sq' : 'nm';
       $(`${id}-out`).textContent = `${value} ${unit}`;
     });
+    updateStructure(p);
+  }
+
+  function updateOutputs(p, result) {
+    const widthCm = p.sizeUm * 1e-4;
+    const areaCm2 = widthCm * widthCm;
+    const current = p.currentDensity * areaCm2;
+    const photonRate = current / q * result.eqe;
+    const photonEnergy = h * c / (p.wavelengthNm * 1e-9);
+    const power = photonRate * photonEnergy;
 
     $('eqe-value').textContent = `${(result.eqe * 100).toFixed(2)}%`;
     $('iqe-value').textContent = `${(result.iqe * 100).toFixed(1)}%`;
@@ -121,8 +124,6 @@
     $('power-value').textContent = prettyPower(power);
     $('current-value').textContent = `${prettyCurrent(current)} · ${p.wavelengthNm} nm`;
     $('surface-loss').textContent = `전체 재결합 중 측벽 몫 ${(result.surfaceShare * 100).toFixed(1)}%`;
-    $('size-label').textContent = `${p.sizeUm} μm`;
-    updateStructure(p);
     state = { p, result };
   }
 
@@ -289,7 +290,7 @@
         const entered = Math.max(min, Math.min(max, field.valueAsNumber));
         range.value = String(min + Math.round((entered - min) / step) * step);
         field.value = range.value;
-        update();
+        refreshInputs();
       });
       field.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') field.blur();
@@ -342,14 +343,25 @@
     ctx.fillText(window.I18N && window.I18N.lang === 'ko' ? 'EQE (%)' : 'EQE (%)', m.l + pw / 2, 8);
   }
 
-  function update() {
+  function runSimulation() {
     const p = read();
     const result = calculate(p, p.currentDensity);
+    updateInputDisplays(p);
     updateOutputs(p, result);
+    $('sim-results').hidden = false;
+    $('run-prompt').hidden = true;
+    $('run-status').textContent = '계산 완료 · 입력값을 바꾸면 다시 실행해야 합니다.';
     drawChart();
     drawPhotonChart();
     drawCurrentEfficiencyChart();
     drawLuminanceChart();
+  }
+
+  function refreshInputs() {
+    updateInputDisplays(read());
+    $('sim-results').hidden = true;
+    $('run-prompt').hidden = false;
+    $('run-status').textContent = '입력값을 설정한 뒤 실행 버튼을 눌러 결과를 확인하세요.';
   }
 
   function drawPhotonChart() {
@@ -527,12 +539,13 @@
   }, { passive: false });
 
   enableLayerNumberFields();
-  sliders.forEach((id) => $(id).addEventListener('input', update));
+  sliders.forEach((id) => $(id).addEventListener('input', refreshInputs));
+  $('run-simulation').addEventListener('click', runSimulation);
   $('reset').addEventListener('click', () => {
     Object.entries(defaults).forEach(([id, value]) => { $(id).value = String(value); });
     document.querySelectorAll('.layer-number').forEach((field) => { field.value = $(field.dataset.rangeId).value; });
-    update();
+    refreshInputs();
   });
-  window.addEventListener('resize', () => { drawChart(); drawPhotonChart(); drawCurrentEfficiencyChart(); drawLuminanceChart(); });
-  update();
+  window.addEventListener('resize', () => { if (state) { drawChart(); drawPhotonChart(); drawCurrentEfficiencyChart(); drawLuminanceChart(); } });
+  refreshInputs();
 })();
