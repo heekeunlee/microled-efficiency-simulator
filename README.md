@@ -28,3 +28,7 @@ photon_rate = input_current · EQE / elementary_charge
 ## 배포
 
 `site/` 폴더는 GitHub Actions를 통해 GitHub Pages로 배포됩니다.
+
+## 저작권 및 이용
+
+이 저장소의 독창적인 소스 코드와 문서는 이희근에게 저작권이 있습니다. 별도의 허가나 라이선스가 부여되지 않았으며, 복제·수정·재배포 또는 상업적 이용은 사전 서면 허가가 필요합니다. 자세한 내용은 [COPYRIGHT.md](COPYRIGHT.md)를 확인해 주세요. 문헌 링크와 제3자 자료에는 각 권리자의 조건이 적용됩니다.
