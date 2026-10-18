@@ -5,11 +5,12 @@
   const q = 1.602176634e-19;
   const h = 6.62607015e-34;
   const c = 299792458;
-  const defaults = { size: 10, current: 65, injection: 95, srv: 4.3, abulk: 7, bscale: 1, cscale: 1, lee: 35, wavelength: 450, active: 30, substrate: 150, nlayer: 600, barrier: 10, well: 3, wells: 5, ebl: 20, player: 120, tco: 80, passivation: 12 };
+  const defaults = { size: 10, current: 65, injection: 95, srv: 4.3, abulk: 7, bscale: 1, cscale: 1, lee: 35, wavelength: 450, substrate: 430, mesa: 80, angle: 85, nucleation: 30, buffer: 800, nlayer: 1800, ndoping: 19, esl: 30, spacer: 200, srl: 3, barrier: 12, well: 3, wells: 10, indium: 15, ebl: 20, aluminum: 5, player: 60, pdoping: 18.5, pcontact: 15, tco: 100, itoRs: 20, metal: 300, alumina: 30, sio2: 300, damage: 200 };
   const sliders = Object.keys(defaults);
   let state = null;
 
   function read() {
+    const layers = Object.fromEntries(['substrate', 'mesa', 'angle', 'nucleation', 'buffer', 'nlayer', 'ndoping', 'esl', 'spacer', 'srl', 'barrier', 'well', 'wells', 'indium', 'ebl', 'aluminum', 'player', 'pdoping', 'pcontact', 'tco', 'itoRs', 'metal', 'alumina', 'sio2', 'damage'].map((id) => [id, Number($(id).value)]));
     return {
       sizeUm: Number($('size').value),
       currentDensity: Math.pow(10, Number($('current').value) / 100 * 4 - 1),
@@ -20,8 +21,8 @@
       auger: Number($('cscale').value) * 1e-30,
       lee: Number($('lee').value) / 100,
       wavelengthNm: Number($('wavelength').value),
-      activeNm: Number($('active').value),
-      layers: Object.fromEntries(['substrate', 'nlayer', 'barrier', 'well', 'wells', 'ebl', 'player', 'tco', 'passivation'].map((id) => [id, Number($(id).value)])),
+      activeNm: layers.wells * (layers.well + layers.barrier),
+      layers,
     };
   }
 
@@ -93,8 +94,11 @@
     $('cscale-out').textContent = `${Number($('cscale').value).toFixed(1)} × 10⁻³⁰`;
     $('lee-out').textContent = `${(p.lee * 100).toFixed(0)}%`;
     $('wavelength-out').textContent = `${p.wavelengthNm} nm`;
-    $('active-out').textContent = `${p.activeNm} nm`;
-    Object.entries(p.layers).forEach(([id, value]) => { $(`${id}-out`).textContent = `${value} ${id === 'wells' ? '개' : 'nm'}`; });
+    $('active-out').textContent = `${p.activeNm} nm (MQW 합계)`;
+    Object.entries(p.layers).forEach(([id, value]) => {
+      const unit = ['srl', 'wells'].includes(id) ? '주기' : id === 'mesa' || id === 'indium' || id === 'aluminum' ? '%' : id === 'angle' ? '°' : ['ndoping', 'pdoping'].includes(id) ? 'log₁₀ cm⁻³' : id === 'itoRs' ? 'Ω/sq' : 'nm';
+      $(`${id}-out`).textContent = `${value} ${unit}`;
+    });
 
     $('eqe-value').textContent = `${(result.eqe * 100).toFixed(2)}%`;
     $('iqe-value').textContent = `${(result.iqe * 100).toFixed(1)}%`;
@@ -124,49 +128,92 @@
 
   function updateStructure(p) {
     const { sizeUm, layers, wavelengthNm } = p;
-    const width = 120 + (sizeUm - 1) / 99 * 340;
-    const left = 360 - width / 2;
-    const right = left + width;
-    const substrateH = 20 + (layers.substrate - 50) / 450 * 26;
-    $('substrate-layer').setAttribute('height', substrateH);
-    $('substrate-layer').setAttribute('y', 280 - substrateH);
-    $('substrate-pattern-layer').setAttribute('height', substrateH);
-    $('substrate-pattern-layer').setAttribute('y', 280 - substrateH);
-    const nH = 28 + (layers.nlayer - 100) / 1400 * 35;
-    const activeStackNm = layers.wells * (layers.well + layers.barrier);
-    const mqwH = 12 + activeStackNm / 224 * 18;
-    const eblH = 5 + (layers.ebl - 5) / 35 * 7;
-    const pH = 24 + (layers.player - 50) / 250 * 27;
-    const tcoH = 7 + (layers.tco - 20) / 130 * 9;
-    const bottom = 238;
-    const nY = bottom - nH, mqwY = nY - mqwH, eblY = mqwY - eblH, pY = eblY - pH, tcoY = pY - tcoH;
-    [['n-layer', nY, nH], ['mqw', mqwY, mqwH], ['ebl-layer', eblY, eblH], ['p-layer', pY, pH], ['contact-layer', tcoY, tcoH]].forEach(([id, y, height]) => {
-      const el = $(id); el.setAttribute('x', left); el.setAttribute('y', y); el.setAttribute('width', width); el.setAttribute('height', height);
-    });
-    $('n-label').setAttribute('y', nY + nH / 2 + 5); $('p-label').setAttribute('y', pY + pH / 2 + 5);
-    $('mqw-label').setAttribute('y', mqwY - 3); $('mqw-label').textContent = `MQW · ${layers.wells} wells`;
-    $('ebl-label').setAttribute('y', eblY + eblH - 1);
-    $('contact-label').setAttribute('y', tcoY - 3);
-    $('well-lines').innerHTML = Array.from({ length: layers.wells - 1 }, (_, i) => `<path d="M${left} ${mqwY + (i + 1) * mqwH / layers.wells}h${width}"/>`).join('');
-    const passW = 4 + (layers.passivation - 5) / 35 * 10;
-    $('passivation-left').setAttribute('d', `M${left - passW} ${tcoY}h${passW}v${bottom - tcoY}h-${passW}z`);
-    $('passivation-right').setAttribute('d', `M${right} ${tcoY}h${passW}v${bottom - tcoY}h-${passW}z`);
-    $('metal-left').setAttribute('d', `M${left} ${tcoY - 8}h${width * 0.18}v8h-${width * 0.18}z`);
-    $('metal-right').setAttribute('d', `M${right - width * 0.18} ${tcoY - 8}h${width * 0.18}v8h-${width * 0.18}z`);
-    $('defect-sites').innerHTML = `<circle cx="${left - 3}" cy="158" r="3"/><circle cx="${right + 3}" cy="178" r="3"/><circle cx="${left - 3}" cy="204" r="3"/>`;
+    const emissionColor = wavelengthColor(wavelengthNm).color;
+    const fullW = 440, fullL = 280, fullR = fullL + fullW, mesaW = fullW * layers.mesa / 100;
+    const mesaL = 500 - mesaW / 2, mesaR = 500 + mesaW / 2, bottom = 385;
+    const H = {
+      substrate: 30 + (layers.substrate - 50) / 950 * 16, nucleation: 5 + (layers.nucleation - 10) / 90 * 4,
+      buffer: 14 + (layers.buffer - 300) / 1700 * 12, nlayer: 28 + (layers.nlayer - 100) / 2900 * 30,
+      esl: layers.esl ? 5 + layers.esl / 100 * 5 : 0, spacer: layers.spacer ? 6 + layers.spacer / 300 * 9 : 0,
+      srl: layers.srl ? 5 + layers.srl * 2.2 : 0, mqw: layers.wells * (2.1 + (layers.well + layers.barrier) / 30 * 2.2),
+      ebl: 6 + (layers.ebl - 5) / 45 * 7, player: 20 + (layers.player - 40) / 260 * 18,
+      pcontact: 5 + layers.pcontact / 50 * 5, tco: 8 + (layers.tco - 20) / 280 * 9, metal: 7 + (layers.metal - 50) / 450 * 7,
+    };
+    const topY = bottom - Object.values(H).reduce((sum, height) => sum + height, 0);
+    const nSurface = bottom - H.substrate - H.nucleation - H.buffer - H.nlayer;
+    const sideShift = (90 - layers.angle) / 20 * 14;
+    let y = bottom;
+    const pos = {}, shapes = [], notes = [];
+    function add(key, title, detail, color, width = mesaW, x = 500 - width / 2, side = 'left') {
+      const hh = H[key]; if (!hh) return;
+      y -= hh; pos[key] = { y, h: hh, x, w: width };
+      const clip = width === mesaW && ['esl', 'spacer', 'srl', 'ebl', 'player', 'pcontact', 'tco'].includes(key) ? ' clip-path="url(#mesa-clip)"' : '';
+      shapes.push(`<rect x="${x}" y="${y}" width="${width}" height="${hh}" fill="${color}" stroke="#fff" stroke-width="1"${clip}/>`);
+      notes.push({ title, detail, color, cy: y + hh / 2, side, key });
+    }
+    add('substrate', '패턴 사파이어 기판', `${layers.substrate} nm`, '#dfe6ec', fullW, fullL, 'left');
+    shapes.push(`<path d="M${fullL} ${pos.substrate.y}l10-8 10 8 10-8 10 8 10-8 10 8h${fullW - 60}" fill="#c5d4df" stroke="#aebfca"/>`);
+    add('nucleation', '저온 핵생성층', `AlN/GaN · ${layers.nucleation} nm`, '#bdc6d4', fullW, fullL, 'left');
+    add('buffer', 'UID-GaN 버퍼·템플릿', `${layers.buffer} nm`, '#a9c9e5', fullW, fullL, 'left');
+    add('nlayer', 'n-GaN:Si 접촉층', `${layers.nlayer} nm · 1e${layers.ndoping} cm⁻³`, '#7eafe2', fullW, fullL, 'left');
+    add('esl', 'n-AlGaN 전자 확산층', `${layers.esl} nm`, '#8ec9d1', mesaW, undefined, 'left');
+    add('spacer', 'n-GaN 스페이서', `${layers.spacer} nm`, '#9ac7e9', mesaW, undefined, 'left');
+    add('srl', 'InGaN/GaN 응력 완화 초격자', `${layers.srl} periods`, '#b8a8dc', mesaW, undefined, 'left');
+    if (H.srl) for (let i = 1; i < layers.srl; i++) shapes.push(`<path d="M${mesaL} ${pos.srl.y + i * H.srl / layers.srl}h${mesaW}" stroke="#f6f2ff"/>`);
+    y -= H.mqw; pos.mqw = { y, h: H.mqw, x: mesaL, w: mesaW };
+    for (let i = 0; i < layers.wells; i++) {
+      const ph = H.mqw / layers.wells, py = y + i * ph;
+      shapes.push(`<rect x="${mesaL}" y="${py}" width="${mesaW}" height="${ph * .48}" fill="${emissionColor}" stroke="#fff4dd" stroke-width="1" clip-path="url(#mesa-clip)"/><rect x="${mesaL}" y="${py + ph * .48}" width="${mesaW}" height="${ph * .52}" fill="#c7d9ef" stroke="#fff" stroke-width=".7" clip-path="url(#mesa-clip)"/>`);
+    }
+    notes.push({ title: 'InGaN/GaN 다중양자우물', detail: `In ${layers.indium}% · ${layers.wells} × (${layers.well}/${layers.barrier} nm)`, color: '#f0ad45', cy: y + H.mqw / 2, side: 'right', key: 'mqw' });
+    add('ebl', 'p-AlGaN 전자 차단층', `${layers.ebl} nm · Al ${layers.aluminum}%`, '#d89fbd', mesaW, undefined, 'right');
+    add('player', 'p-GaN:Mg 정공 주입층', `${layers.player} nm · 1e${layers.pdoping} cm⁻³`, '#9bd7ca', mesaW, undefined, 'right');
+    add('pcontact', 'p++-GaN 접촉층', `${layers.pcontact} nm`, '#67bca9', mesaW, undefined, 'right');
+    add('tco', 'ITO 투명 전류 확산층', `${layers.tco} nm · ${layers.itoRs} Ω/sq`, '#63949a', mesaW, undefined, 'right');
+    add('metal', 'p-금속 전극', `Ti/Al/Ni/Au · ${layers.metal} nm`, '#d6b752', mesaW * .58, 500 - mesaW * .29, 'right');
+    const mqw = pos.mqw;
+    const damageW = 3 + layers.damage / 1500 * 11, aluminaW = 3 + layers.alumina / 60 * 6, sio2W = 4 + layers.sio2 / 500 * 8;
+    const damageY = mqw.y - 8, damageH = mqw.h + 16;
+    const sidewallH = nSurface - topY;
+    const fracAtMqw = Math.max(0, Math.min(1, (mqw.y + mqw.h / 2 - topY) / sidewallH));
+    const leftWall = mesaL + sideShift * fracAtMqw, rightWall = mesaR - sideShift * fracAtMqw;
+    const leftAlumina = `M${mesaL - damageW - aluminaW} ${topY}L${mesaL - damageW} ${topY}L${mesaL + sideShift - damageW} ${nSurface}L${mesaL + sideShift - damageW - aluminaW} ${nSurface}Z`;
+    const leftSio2 = `M${mesaL - damageW - aluminaW - sio2W} ${topY}L${mesaL - damageW - aluminaW} ${topY}L${mesaL + sideShift - damageW - aluminaW} ${nSurface}L${mesaL + sideShift - damageW - aluminaW - sio2W} ${nSurface}Z`;
+    const rightAlumina = `M${mesaR + damageW} ${topY}L${mesaR + damageW + aluminaW} ${topY}L${mesaR - sideShift + damageW + aluminaW} ${nSurface}L${mesaR - sideShift + damageW} ${nSurface}Z`;
+    const rightSio2 = `M${mesaR + damageW + aluminaW} ${topY}L${mesaR + damageW + aluminaW + sio2W} ${topY}L${mesaR - sideShift + damageW + aluminaW + sio2W} ${nSurface}L${mesaR - sideShift + damageW + aluminaW} ${nSurface}Z`;
+    const side = `<rect x="${leftWall}" y="${damageY}" width="${damageW}" height="${damageH}" fill="url(#damage-pattern)" stroke="#c94b4b"/><rect x="${rightWall - damageW}" y="${damageY}" width="${damageW}" height="${damageH}" fill="url(#damage-pattern)" stroke="#c94b4b"/><path d="${leftAlumina}" fill="#8c79cf" stroke="#fff"/><path d="${leftSio2}" fill="#b5a8e8" stroke="#fff"/><path d="${rightAlumina}" fill="#8c79cf" stroke="#fff"/><path d="${rightSio2}" fill="#b5a8e8" stroke="#fff"/><rect x="${fullR - 46}" y="${pos.nlayer.y - 10}" width="38" height="10" rx="2" fill="#d6b752"/>`;
+    const clipDefs = `<defs><clipPath id="mesa-clip"><path d="M${mesaL} ${topY}L${mesaR} ${topY}L${mesaR - sideShift} ${nSurface}L${mesaL + sideShift} ${nSurface}Z"/></clipPath></defs>`;
+    $('device-layers').innerHTML = clipDefs + shapes.join('') + `<text x="500" y="${pos.substrate.y + H.substrate / 2 + 4}" text-anchor="middle" class="svg-layer-inside">Sapphire</text><text x="${fullR - 27}" y="${pos.nlayer.y - 14}" text-anchor="middle" class="svg-layer-small">n-pad</text>`;
+    $('sidewall-structure').innerHTML = side;
+    notes.push({ title: 'ICP 식각 손상대', detail: `${layers.damage} nm · MQW 측벽`, color: '#c94b4b', cy: mqw.y + mqw.h / 2, side: 'right', key: 'damage' });
+    notes.push({ title: 'ALD Al₂O₃ 계면 패시베이션', detail: `${layers.alumina} nm`, color: '#8c79cf', cy: topY + sidewallH * .42, side: 'right', key: 'alumina' });
+    notes.push({ title: 'PECVD SiO₂ 절연 오버코트', detail: `${layers.sio2} nm`, color: '#b5a8e8', cy: topY + sidewallH * .66, side: 'right', key: 'sio2' });
+    notes.push({ title: 'n-금속 접촉 패드', detail: '메사 노출 n-GaN', color: '#d6b752', cy: pos.nlayer.y - 5, side: 'left', key: 'npad' });
+    notes.push({ title: '메사 식각 프로파일', detail: `${layers.angle}° 측벽 · 폭 ${layers.mesa}%`, color: '#56616b', cy: topY + sidewallH * .82, side: 'right', key: 'profile' });
+    function drawNotes(sideName) {
+      const items = notes.filter((n) => n.side === sideName).sort((a, b) => a.cy - b.cy);
+      const tx = sideName === 'left' ? 18 : 755, lx = sideName === 'left' ? 255 : 735;
+      const slots = items.map((_, i) => 52 + i * (340 / Math.max(1, items.length - 1)));
+      return items.map((item, i) => {
+        const edge = sideName === 'left' ? (item.key === 'substrate' || item.key === 'nucleation' || item.key === 'buffer' || item.key === 'nlayer' ? fullL : mesaL) : (['damage', 'alumina', 'sio2'].includes(item.key) ? mesaR + damageW + aluminaW : mesaR);
+        const elbow = sideName === 'left' ? Math.min(lx, edge - 8) : Math.max(lx, edge + 8);
+        return `<path d="M${edge} ${item.cy}H${elbow}L${sideName === 'left' ? 246 : 746} ${slots[i]}" fill="none" stroke="${item.color}" stroke-width="1.1"/><circle cx="${edge}" cy="${item.cy}" r="2.2" fill="${item.color}"/><text x="${tx}" y="${slots[i] - 2}" class="svg-callout-title">${item.title}</text><text x="${tx}" y="${slots[i] + 12}" class="svg-callout-detail">${item.detail}</text>`;
+      }).join('');
+    }
+    $('device-callouts').innerHTML = drawNotes('left') + drawNotes('right');
     const glow = wavelengthColor(wavelengthNm);
     $('photon-arrows').setAttribute('stroke', glow.color);
-    $('mqw').setAttribute('fill', glow.color);
     $('wavelength-swatch').style.backgroundColor = glow.color;
     $('wavelength-swatch').style.boxShadow = `0 0 14px ${glow.color}`;
+    $('active-swatch').style.backgroundColor = glow.color;
     $('wavelength-color').textContent = `${glow.name} · ${wavelengthNm} nm`;
     $('wavelength-color').style.color = glow.color;
     $('photon-arrows').innerHTML = [0.42, 0.5, 0.58].map((f, i) => {
-      const x = 360 + (f - 0.5) * width;
-      const rise = i === 1 ? 62 : 45, tip = 181 - rise;
-      return `<path d="M${x} 181v-${rise}"/><path d="m${x - 5} ${tip + 7} 5-7 5 7"/>`;
+      const x = mesaL + f * mesaW, origin = mqw.y + mqw.h / 2;
+      const rise = i === 1 ? 82 : 62, tip = origin - rise;
+      return `<path d="M${x} ${origin}v-${rise}"/><path d="m${x - 5} ${tip + 7} 5-7 5 7"/>`;
     }).join('');
-    $('size-label').textContent = `${sizeUm} μm`;
+    $('size-label').textContent = `${sizeUm} μm pixel · mesa ${Math.round(mesaW / fullW * 100)}%`;
   }
 
   function drawChart() {
