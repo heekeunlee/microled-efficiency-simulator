@@ -5,7 +5,7 @@
   const q = 1.602176634e-19;
   const h = 6.62607015e-34;
   const c = 299792458;
-  const defaults = { size: 100, current: 0, injection: 100, srv: 2, abulk: 6, bscale: 5, cscale: 0.1, lee: 80, wavelength: 450, substrate: 430, mesa: 80, angle: 85, nucleation: 30, buffer: 800, nlayer: 1800, ndoping: 19, esl: 30, spacer: 200, srl: 3, barrier: 5, well: 1, wells: 1, indium: 15, ebl: 20, aluminum: 5, player: 60, pdoping: 18.5, pcontact: 15, tco: 100, itoRs: 20, metal: 300, alumina: 30, sio2: 300, damage: 200 };
+  const defaults = { size: 100, current: 0, injection: 100, srv: 2, abulk: 5, bscale: 5, cscale: 0.1, lee: 80, wavelength: 450, substrate: 430, mesa: 80, angle: 85, nucleation: 30, buffer: 800, nlayer: 1800, ndoping: 19, esl: 30, spacer: 200, srl: 3, barrier: 5, well: 1, wells: 1, indium: 15, ebl: 20, aluminum: 5, player: 60, pdoping: 18.5, pcontact: 15, tco: 100, itoRs: 20, metal: 300, alumina: 30, sio2: 300, damage: 200 };
   const sliders = Object.keys(defaults);
   let structureZoom = 1;
   let selectedStructureKey = null;
