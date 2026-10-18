@@ -5,17 +5,17 @@
   const hPlanck = 6.62607015e-34;
   const cLight = 299792458;
   const photopic = [0.00004,0.00012,0.000396,0.00121,0.004,0.0116,0.023,0.038,0.06,0.091,0.139,0.208,0.323,0.503,0.71,0.862,0.954,0.995,0.995,0.952,0.87,0.757,0.631,0.503,0.381,0.265,0.175,0.107,0.061,0.032,0.017,0.00821,0.0041,0.00209,0.00105,0.00052,0.000249,0.00012];
-  const cieV = [0.00004,0.00012,0.000396,0.00121,0.004,0.0116,0.023,0.038,0.06,0.091,0.139,0.208,0.323,0.503,0.71,0.862,0.954,0.995,0.995,0.952,0.87,0.757,0.631,0.503,0.381,0.265,0.175,0.107,0.061,0.032,0.017,0.00821,0.0041,0.00209,0.00105,0.00052,0.000249,0.00012];
-  const defaults = { width:20, depth:15, active:30, density:0, srv:2, abulk:6.69897, b:5, c:0.1, injection:95, lee:70, wavelength:450 };
+  const defaults = { width:20, depth:15, active:30, edgeLength:1.5, density:0, srv:2, abulk:6.69897, b:5, c:0.1, injection:95, lee:70, wavelength:450 };
   let state = null;
   let yaw = -0.65;
   let zoom = 1;
   let drag = null;
+  let heatmapBounds = null;
 
   function read() {
     return { widthUm:+$('width').value, depthUm:+$('depth').value, activeNm:+$('active').value,
       currentDensity:10 ** (-1 + 4 * (+$('density').value / 100)), srv:10 ** (+$('srv').value),
-      aBulk:10 ** (+$('abulk').value), b:+$('b').value * 1e-11, auger:+$('c').value * 1e-30,
+      edgeLengthUm:+$('edge-length').value, aBulk:10 ** (+$('abulk').value), b:+$('b').value * 1e-11, auger:+$('c').value * 1e-30,
       injection:+$('injection').value / 100, lee:+$('lee').value / 100, wavelengthNm:+$('wavelength').value };
   }
 
@@ -27,17 +27,27 @@
     return (low+high)/2;
   }
 
-  function calculate(p,j) {
-    const w=p.widthUm*1e-4, d=p.depthUm*1e-4, active=p.activeNm*1e-7;
-    const perimeterArea=2*(1/w+1/d);
-    const sidewallA=p.srv*perimeterArea;
-    const aEff=p.aBulk+sidewallA;
+  function calculate(p,j,columns=12) {
+    const widthCm=p.widthUm*1e-4,depthCm=p.depthUm*1e-4,active=p.activeNm*1e-7;
+    const perimeterArea=2*(1/widthCm+1/depthCm),sidewallA=p.srv*perimeterArea;
+    const rows=Math.max(8,Math.min(56,Math.round(columns*p.depthUm/p.widthUm)));
+    const rawWeights=[];
+    for(let row=0;row<rows;row++)for(let col=0;col<columns;col++){
+      const x=p.widthUm*(col+.5)/columns,y=p.depthUm*(row+.5)/rows,ell=p.edgeLengthUm;
+      rawWeights.push(Math.exp(-x/ell)+Math.exp(-(p.widthUm-x)/ell)+Math.exp(-y/ell)+Math.exp(-(p.depthUm-y)/ell));
+    }
+    const meanWeight=rawWeights.reduce((sum,value)=>sum+value,0)/rawWeights.length;
     const generation=j*p.injection/(q*active);
-    const n=carrierDensity(generation,aEff,p.b,p.auger);
-    const rad=p.b*n*n, bulk=p.aBulk*n, surface=sidewallA*n, auger=p.auger*n*n*n;
-    const total=rad+bulk+surface+auger;
-    const iqe=total?rad/total:0;
-    return {n,iqe,eqe:p.injection*iqe*p.lee,sidewallA,sidewallShare:total?surface/total:0,perimeterArea};
+    const cells=[];let iqeSum=0,eqeSum=0,nSum=0,surfaceShareSum=0,index=0;
+    for(let row=0;row<rows;row++)for(let col=0;col<columns;col++){
+      const localSurfaceA=sidewallA*rawWeights[index++]/meanWeight;
+      const n=carrierDensity(generation,p.aBulk+localSurfaceA,p.b,p.auger);
+      const rad=p.b*n*n,bulk=p.aBulk*n,surface=localSurfaceA*n,auger=p.auger*n*n*n,total=rad+bulk+surface+auger;
+      const iqe=total?rad/total:0,eqe=p.injection*iqe*p.lee;
+      iqeSum+=iqe;eqeSum+=eqe;nSum+=n;surfaceShareSum+=total?surface/total:0;
+      cells.push({x:(col+.5)/columns,y:(row+.5)/rows,eqe});
+    }
+    return {n:nSum/cells.length,iqe:iqeSum/cells.length,eqe:eqeSum/cells.length,sidewallA,sidewallShare:surfaceShareSum/cells.length,perimeterArea,cells,columns,rows};
   }
 
   function colorForWave(nm) {
@@ -57,6 +67,7 @@
     $('width-out').textContent=`${$('width').value} μm`;
     $('depth-out').textContent=`${$('depth').value} μm`;
     $('active-out').textContent=`${$('active').value} nm`;
+    $('edge-length-out').textContent=`${$('edge-length').value} μm`;
     $('density-out').textContent=`${(10**(-1+4*(+$('density').value/100))).toPrecision(3)} A/cm²`;
     $('srv-out').textContent=`${(10**(+$('srv').value)).toPrecision(3)} cm/s`;
     $('abulk-out').textContent=`${(10**(+$('abulk').value)).toPrecision(3)} s⁻¹`;
@@ -142,7 +153,7 @@
   function photopicV(nm){const position=(nm-380)/10,index=Math.max(0,Math.min(photopic.length-2,Math.floor(position))),fraction=Math.max(0,Math.min(1,position-index));return photopic[index]+(photopic[index+1]-photopic[index])*fraction;}
 
   function run() {
-    const p=read(),result=calculate(p,p.currentDensity);
+    const p=read(),result=calculate(p,p.currentDensity,56);
     const area=(p.widthUm*1e-4)*(p.depthUm*1e-4),current=p.currentDensity*area;
     const cdA=result.eqe*683*photopicV(p.wavelengthNm)*hPlanck*cLight/(Math.PI*q*p.wavelengthNm*1e-9);
     const luminance=cdA*p.currentDensity*1e4;
@@ -152,9 +163,51 @@
     $('photons').textContent=prettyRate(current/q*result.eqe);
     $('cda').textContent=`${cdA.toPrecision(3)} cd/A`;
     $('luminance').textContent=prettyRate(luminance)+' cd/m²';
+    $('heatmap-current').textContent=`J = ${p.currentDensity.toPrecision(3)} A/cm²`;
     $('outputs').hidden=false;$('prompt').hidden=true;
     $('status').textContent='계산 완료 · 입력을 바꾸면 결과가 숨겨집니다. 다시 실행해 주세요.';
-    state={p,result};drawChart();
+    state={p,result};drawHeatmap();drawChart();
+  }
+
+  function heatColor(value,min,max) {
+    const stops=[[30,64,175],[25,151,190],[72,192,139],[248,210,78],[198,55,47]];
+    const t=max-min<1e-12?.5:Math.max(0,Math.min(1,(value-min)/(max-min)))*(stops.length-1);
+    const i=Math.min(stops.length-2,Math.floor(t)),f=t-i;
+    const rgb=stops[i].map((channel,index)=>Math.round(channel+(stops[i+1][index]-channel)*f));
+    return `rgb(${rgb.join(',')})`;
+  }
+
+  function drawHeatmap() {
+    const canvas=$('heatmap'),rect=canvas.getBoundingClientRect();if(!rect.width||!state)return;
+    const dpr=Math.min(devicePixelRatio||1,2),ctx=canvas.getContext('2d');
+    canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+    const w=rect.width,h=rect.height,{p,result}=state,values=result.cells.map(cell=>cell.eqe),min=Math.min(...values),max=Math.max(...values);
+    const margins={left:43,right:66,top:30,bottom:37},plotW=w-margins.left-margins.right,plotH=h-margins.top-margins.bottom;
+    const scale=Math.min(plotW/p.widthUm,plotH/p.depthUm),mapW=p.widthUm*scale,mapH=p.depthUm*scale;
+    const x0=margins.left+(plotW-mapW)/2,y0=margins.top+(plotH-mapH)/2,cw=mapW/result.columns,ch=mapH/result.rows;
+    heatmapBounds={x:x0,y:y0,w:mapW,h:mapH,columns:result.columns,rows:result.rows};
+    ctx.clearRect(0,0,w,h);ctx.fillStyle='#f8fbfb';ctx.fillRect(0,0,w,h);
+    result.cells.forEach((cell,index)=>{const col=index%result.columns,row=Math.floor(index/result.columns);ctx.fillStyle=heatColor(cell.eqe,min,max);ctx.fillRect(x0+col*cw,y0+row*ch,Math.ceil(cw+.2),Math.ceil(ch+.2));});
+    ctx.strokeStyle='#344f5a';ctx.lineWidth=1.2;ctx.strokeRect(x0,y0,mapW,mapH);
+    ctx.fillStyle='#64777f';ctx.font='10px system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(`W = ${p.widthUm} μm`,x0+mapW/2,h-12);
+    ctx.save();ctx.translate(13,y0+mapH/2);ctx.rotate(-Math.PI/2);ctx.fillText(`D = ${p.depthUm} μm`,0,0);ctx.restore();
+    const barX=w-40,barY=y0,barH=mapH,barW=12,gradient=ctx.createLinearGradient(0,barY+barH,0,barY);
+    gradient.addColorStop(0,heatColor(min,min,max));gradient.addColorStop(.25,heatColor(min+(max-min)*.25,min,max));gradient.addColorStop(.5,heatColor(min+(max-min)*.5,min,max));gradient.addColorStop(.75,heatColor(min+(max-min)*.75,min,max));gradient.addColorStop(1,heatColor(max,min,max));
+    ctx.fillStyle=gradient;ctx.fillRect(barX,barY,barW,barH);ctx.strokeStyle='#83939a';ctx.strokeRect(barX,barY,barW,barH);
+    ctx.fillStyle='#50636c';ctx.font='10px system-ui,sans-serif';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(`${(max*100).toFixed(1)}%`,barX+16,barY);
+    ctx.textBaseline='bottom';ctx.fillText(`${(min*100).toFixed(1)}%`,barX+16,barY+barH);
+    ctx.textBaseline='top';ctx.textAlign='left';ctx.fillStyle='#71828a';ctx.fillText('국소 EQE',margins.left,y0-16);
+    $('heat-min').textContent=`낮음 · ${(min*100).toFixed(2)}%`;$('heat-max').textContent=`높음 · ${(max*100).toFixed(2)}%`;
+  }
+
+  function readHeatmapPoint(event) {
+    if(!state||!heatmapBounds)return;
+    const rect=$('heatmap').getBoundingClientRect(),x=event.clientX-rect.left,y=event.clientY-rect.top,b=heatmapBounds;
+    if(x<b.x||x>b.x+b.w||y<b.y||y>b.y+b.h){$('heatmap-readout').textContent='격자 위에 포인터를 올리면 위치별 EQE를 표시합니다.';return;}
+    const col=Math.min(b.columns-1,Math.floor((x-b.x)/b.w*b.columns)),row=Math.min(b.rows-1,Math.floor((y-b.y)/b.h*b.rows));
+    const cell=state.result.cells[row*b.columns+col];
+    $('heatmap-readout').textContent=`x ${(cell.x*state.p.widthUm).toFixed(2)} μm · y ${(cell.y*state.p.depthUm).toFixed(2)} μm · 국소 EQE ${(cell.eqe*100).toFixed(3)}%`;
   }
 
   function drawChart() {
@@ -162,13 +215,13 @@
     const dpr=Math.min(devicePixelRatio||1,2),ctx=canvas.getContext('2d');
     canvas.width=Math.round(rect.width*dpr);canvas.height=Math.round(rect.height*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
     const w=rect.width,h=rect.height,m={l:55,r:14,t:18,b:34},pw=w-m.l-m.r,ph=h-m.t-m.b;
-    const points=[];for(let i=0;i<=80;i++){const j=10**(-1+4*i/80);points.push({j,eqe:calculate(state.p,j).eqe*100});}
+    const points=[];for(let i=0;i<=80;i++){const j=10**(-1+4*i/80);points.push({j,eqe:calculate(state.p,j,12).eqe*100});}
     const maxY=Math.max(5,Math.ceil(Math.max(...points.map(v=>v.eqe))/5)*5),X=j=>m.l+(Math.log10(j)+1)/4*pw,Y=v=>m.t+ph-v/maxY*ph;
     ctx.clearRect(0,0,w,h);ctx.font='10px system-ui,sans-serif';ctx.textBaseline='middle';
     for(let i=0;i<=4;i++){const v=maxY*i/4,y=Y(v);ctx.strokeStyle='#e7eded';ctx.beginPath();ctx.moveTo(m.l,y);ctx.lineTo(w-m.r,y);ctx.stroke();ctx.fillStyle='#76868d';ctx.textAlign='right';ctx.fillText(`${v.toFixed(0)}%`,m.l-8,y);}
     [0.1,1,10,100,1000].forEach((j,i)=>{const x=X(j);ctx.strokeStyle='#f0f2f3';ctx.beginPath();ctx.moveTo(x,m.t);ctx.lineTo(x,m.t+ph);ctx.stroke();ctx.fillStyle='#76868d';ctx.textAlign=i===4?'right':'center';ctx.fillText(String(j),i===4?x-2:x,h-17);});
     ctx.beginPath();points.forEach((v,i)=>i?ctx.lineTo(X(v.j),Y(v.eqe)):ctx.moveTo(X(v.j),Y(v.eqe)));ctx.strokeStyle='#0b8b7d';ctx.lineWidth=3;ctx.lineJoin='round';ctx.stroke();
-    const mark=calculate(state.p,state.p.currentDensity).eqe*100;ctx.beginPath();ctx.arc(X(state.p.currentDensity),Y(mark),5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#d68142';ctx.stroke();
+    const mark=state.result.eqe*100;ctx.beginPath();ctx.arc(X(state.p.currentDensity),Y(mark),5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#d68142';ctx.stroke();
   }
 
   document.querySelectorAll('input[type=range]').forEach(range=>{
@@ -178,6 +231,8 @@
   });
   function changed(){state=null;$('outputs').hidden=true;$('prompt').hidden=false;$('status').textContent='입력값을 설정한 뒤 실행하세요.';updateInputs();}
   $('run').addEventListener('click',run);
+  $('heatmap').addEventListener('pointermove',readHeatmapPoint);
+  $('heatmap').addEventListener('pointerleave',()=>{$('heatmap-readout').textContent='격자 위에 포인터를 올리면 위치별 EQE를 표시합니다.';});
   $('reset').addEventListener('click',()=>{for(const [id,value] of Object.entries(defaults))$(id).value=String(value);document.querySelectorAll('.numeric').forEach(input=>{input.value=$(input.parentElement.querySelector('input[type=range]').id).value;});changed();});
   $('rotate-left').addEventListener('click',()=>{yaw-=.2;drawScene();});$('rotate-right').addEventListener('click',()=>{yaw+=.2;drawScene();});
   $('zoom-in').addEventListener('click',()=>{zoom=Math.min(1.8,zoom*1.12);drawScene();});$('zoom-out').addEventListener('click',()=>{zoom=Math.max(.65,zoom/1.12);drawScene();});
@@ -185,6 +240,6 @@
   canvas.addEventListener('pointermove',event=>{if(!drag)return;yaw+=(event.clientX-drag.x)*.012;drag={x:event.clientX,y:event.clientY};drawScene();});
   canvas.addEventListener('pointerup',()=>{drag=null;});canvas.addEventListener('pointercancel',()=>{drag=null;});
   canvas.addEventListener('wheel',event=>{event.preventDefault();zoom=Math.max(.65,Math.min(1.8,zoom*(event.deltaY<0?1.08:.92)));drawScene();},{passive:false});
-  window.addEventListener('resize',()=>{drawScene();if(state)drawChart();});
+  window.addEventListener('resize',()=>{drawScene();if(state){drawHeatmap();drawChart();}});
   updateInputs();
 })();
