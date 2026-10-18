@@ -65,7 +65,7 @@
         <div><label for="lee" data-en="Light extraction, LEE">광추출효율, LEE</label><output id="lee-out" for="lee"></output><input id="lee" type="range" min="5" max="80" step="1" value="80"></div>
       </div>
       <details class="advanced"><summary data-en="Layer stack parameters">층별 단면 파라미터</summary>
-        <p class="advanced-intro">도식상 두께는 비교가 쉽도록 과장했습니다. MQW의 well/barrier 합계와 소자 폭은 축약 모델의 생성률·측벽 항에 반영하고, 나머지 층은 구조 시각화용입니다.</p>
+        <p class="advanced-intro">슬라이더 옆 숫자 칸에 값을 직접 입력할 수 있습니다. 도식상 두께는 비교가 쉽도록 과장했습니다. MQW의 well/barrier 합계와 소자 폭은 축약 모델에 반영하고, 나머지 층별 값은 구조 시각화용입니다.</p>
         <div class="control-group"><label for="substrate" data-en="Substrate thickness">사파이어 기판 두께</label><output id="substrate-out"></output><input id="substrate" type="range" min="50" max="1000" step="10" value="430"></div>
         <div class="control-group"><label for="mesa" data-en="Mesa width ratio">메사 폭 / 픽셀 폭</label><output id="mesa-out"></output><input id="mesa" type="range" min="40" max="95" step="1" value="80"></div>
         <div class="control-group"><label for="angle" data-en="Mesa sidewall angle">메사 측벽 각도</label><output id="angle-out"></output><input id="angle" type="range" min="70" max="90" step="1" value="85"></div>
@@ -108,7 +108,7 @@
             <defs><pattern id="substrate-pattern" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M0 12 12 0" stroke="#9ba7b2" stroke-width="1" opacity=".3"/></pattern><pattern id="damage-pattern" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 0 6 6M6 0 0 6" stroke="#c94b4b" stroke-width="1" opacity=".55"/></pattern></defs>
             <g id="device-layers"></g><g id="sidewall-structure"></g><g id="device-callouts"></g>
             <g id="photon-arrows" class="photon" fill="none" stroke="#e4a42e" stroke-width="3"></g>
-            <path d="M300 426v6m0-3h400m0-3v6" stroke="#53616d" stroke-width="1.5"/><text id="size-label" x="500" y="444" text-anchor="middle" class="svg-dim">10 μm mesa</text>
+            <path id="mesa-dimension" d="M350 426v6m0-3h240m0-3v6" stroke="#53616d" stroke-width="1.5"/><text id="size-label" x="500" y="444" text-anchor="middle" class="svg-dim">10 μm mesa</text>
           </svg>
         </div>
         <div class="legend-row"><span><i class="swatch sw-substrate"></i>기판·버퍼</span><span><i class="swatch sw-n"></i>n형 에피층</span><span><i id="active-swatch" class="swatch sw-active"></i>InGaN 우물 / GaN 장벽</span><span><i class="swatch sw-ebl"></i>p-AlGaN EBL</span><span><i class="swatch sw-p"></i>p형 에피층</span><span><i class="swatch sw-contact"></i>ITO·금속</span><span><i class="swatch sw-pass"></i>측벽 패시베이션</span><span><i class="swatch sw-defect"></i>식각 손상대</span></div>
@@ -127,6 +127,7 @@
         <article class="stat-card"><span data-en="Optical power">광출력</span><strong id="power-value">—</strong><small id="current-value">—</small></article>
       </section>
 
+      <div class="chart-pair">
       <section class="panel chart-panel">
         <div class="section-head"><div><span class="step">B</span><h2 data-en="Efficiency vs. current density">전류밀도에 따른 효율</h2></div><span class="chart-legend"><i></i><span data-en="EQE">EQE</span></span></div>
         <p class="chart-intro" data-en="The dot marks the current setting. Lower pixels are more sensitive to the same sidewall recombination velocity.">점은 현재 설정입니다. 같은 측벽 재결합 속도에서도 픽셀이 작을수록 표면 손실 영향이 커집니다.</p>
@@ -140,6 +141,7 @@
         <canvas id="photon-chart" aria-label="입력 전류에 따른 포톤 출력 그래프"></canvas>
         <div class="chart-foot"><span data-en="Input current (A) · log scale">입력 전류 (A) · 로그 눈금</span><span data-en="Output photons / second · log scale">출광 포톤 / 초 · 로그 눈금</span></div>
       </section>
+      </div>
 
       <section class="panel equation-panel">
         <div class="section-head"><div><span class="step">C</span><h2 data-en="What the model calculates">계산에 쓰는 모델</h2></div></div>
@@ -155,13 +157,23 @@
   </section>
   <p class="page-credit">설계 경향 탐색용 축약 모델</p>
   <section class="research-references" aria-labelledby="research-references-title">
-    <h2 id="research-references-title">참고 연구 결과</h2>
+    <h2 id="research-references-title">참고문헌</h2>
     <ol>
       <li><a href="https://doi.org/10.1002/advs.202506784" target="_blank" rel="noreferrer">Z. Li et al., “Vertical GaN-On-GaN Micro-LEDs for Near-Eye Displays,” Advanced Science 12, e06784 (2025).</a> — 1.8 μm n-GaN, 30 nm n-AlGaN 전자 확산층, 200 nm spacer, 응력 완화층, 10주기 MQW(3/12 nm), 20 nm EBL과 p-GaN(60 nm) 적층을 보고했습니다. 이온 주입 격리 소자는 식각 메사 대비 더 높은 표시 유효 EQE를 보였습니다.</li>
       <li><a href="https://doi.org/10.1002/lpor.202500791" target="_blank" rel="noreferrer">J. Yin et al., “Metal-Insulator-Semiconductor Structure-Based InGaN/GaN Micro-Light-Emitting Devices with Superior External Quantum Efficiency,” Laser &amp; Photonics Reviews 19, e00791 (2025).</a> — 8 μm MIS 마이크로LED에서 측벽에 +20 V를 인가했을 때 EQE가 0.625 A/cm²에서 20.0%→30.7%로 증가했고, 최대 EQE 53.9%를 23.3 A/cm²에서 측정했습니다.</li>
       <li><a href="https://doi.org/10.1038/s41377-024-01639-3" target="_blank" rel="noreferrer">H. Wu et al., “Ultra-high brightness Micro-LEDs with wafer-scale uniform GaN-on-silicon epilayers,” Light: Science &amp; Applications 13, 284 (2024).</a> — 메사 KOH 처리 후 평균 재결합 수명이 7.58→10.69 ns, ALD Al₂O₃ 패시베이션 후 15.94 ns로 증가했다고 보고했습니다.</li>
+      <li><a href="https://doi.org/10.1364/OE.27.00A643" target="_blank" rel="noreferrer">J. Kou et al., “Impact of the surface recombination on InGaN/GaN-based blue micro-light emitting diodes,” Optics Express 27, A643–A653 (2019).</a> — 수치 분석에서 소자가 작아질수록 둘레/면적비와 측벽 SRH 재결합의 영향이 커져 EQE와 광출력 밀도가 낮아질 수 있음을 보였습니다.</li>
+      <li><a href="https://doi.org/10.1002/adom.202203128" target="_blank" rel="noreferrer">J.-H. Park et al., “Impact of Sidewall Conditions on Internal Quantum Efficiency and Light Extraction Efficiency of Micro-LEDs,” Advanced Optical Materials 11, 2203128 (2023).</a> — TMAH 처리 후 400 μm² 소자의 저전류 peak EQE는 약 10% 증가했으나 100 μm² 소자는 약 3% 감소했습니다. 광추출도 EQE에 영향을 줌을 보였습니다.</li>
+      <li><a href="https://doi.org/10.1002/pssr.202500042" target="_blank" rel="noreferrer">J.-H. Park et al., “Role of Sidewall Conditions in the External Quantum Efficiency of InGaN-Based Micro-LEDs,” physica status solidi (RRL) 19, 2500042 (2025).</a> — 10–40 μm 소자에서 ALD-SiO₂ 계면층과 Al₂O₃ 두께·TMAH 조건을 비교하고 저전류 EQE가 측벽 처리에 민감함을 보고했습니다.</li>
+      <li><a href="https://doi.org/10.3390/mi14010010" target="_blank" rel="noreferrer">“Improved Optical and Electrical Characteristics of GaN-Based Micro-LEDs by Optimized Sidewall Passivation,” Micromachines 14, 10 (2023).</a> — 산·염기 습식 처리와 SiO₂ 패시베이션 조합에서 IQE 85.4%, −5 V 역누설전류 10⁻¹³ A를 보고했고, 작은 픽셀에서 EQE 개선 폭이 더 컸습니다.</li>
+      <li><a href="https://doi.org/10.1186/s11671-022-03669-5" target="_blank" rel="noreferrer">J. Park et al., “Understanding the Sidewall Passivation Effects in AlGaInP/GaInP Micro-LED,” Nanoscale Research Letters 17, 29 (2022).</a> — 적색 15–80 μm 소자를 황 처리·Al₂O₃ 패시베이션하고 EQE 데이터를 ABC 모델에 맞췄습니다. 15 μm 소자의 peak EQE가 19.8% 개선되었고, 크기 의존 SRH 계수로 표면 재결합 속도를 분석했습니다.</li>
+      <li><a href="https://doi.org/10.1016/bs.semsem.2020.12.001" target="_blank" rel="noreferrer">X. Wang and S. Samukawa, “Damage-free neutral beam etching for GaN micro-LEDs processing,” Semiconductors and Semimetals 106, 203–221 (2021).</a> — 중성빔 식각으로 6 × 6 μm²까지 제작한 소자에서 칩 크기에 따른 EQE 저하가 거의 없는 결과를 정리했습니다.</li>
+      <li><a href="https://doi.org/10.1364/OE.470703" target="_blank" rel="noreferrer">S. Hang et al., “On the impact of the beveled mesa for GaN-based micro-light emitting diodes: electrical and optical properties,” Optics Express 30, 37675–37685 (2022).</a> — 4주기 3/8 nm MQW, 20 nm p-AlGaN EBL, 100 nm p-GaN 구조와 경사 메사에서 광추출·측벽 재결합의 절충을 분석했습니다.</li>
+      <li><a href="https://doi.org/10.1016/j.jlumin.2021.117937" target="_blank" rel="noreferrer">“Investigation of sidewall damage induced by reactive ion etching on AlGaInP MESA for micro-LED application,” Journal of Luminescence 234, 117937 (2021).</a> — 6 × 6 μm² 적색 마이크로LED의 식각 측벽 손상과 BCl₃ 식각 잔류물을 광학 분석·TOF-SIMS로 조사했습니다.</li>
+      <li><a href="https://doi.org/10.1364/OE.569308" target="_blank" rel="noreferrer">“Etching p-GaN to manage current spreading to reduce surface recombination in AlGaN micro-LEDs,” Optics Express 33 (2025).</a> — DUV 이중 메사 구조에서 측벽 전류·표면 재결합을 줄이는 설계를 수치해석과 실험으로 다뤘습니다.</li>
+      <li><a href="https://doi.org/10.1088/1361-6463/ae553e" target="_blank" rel="noreferrer">I.-H. Lee et al., “Mitigating sidewall damage effects in GaN-based multi-quantum-well micro-LEDs prepared by top-down fabrication,” Journal of Physics D: Applied Physics 59, 133004 (2026).</a> — 마이크로·나노 LED 측벽 손상 리뷰입니다. 건식 식각 구조 손상층(약 40–100 nm)보다 전기적으로 영향받는 영역이 더 넓을 수 있고, 파란색 소자는 약 10–20 μm 이하에서 효율 저하가 두드러진다고 정리했습니다.</li>
     </ol>
-    <p>위 수치는 논문별 소자와 측정 조건에서 얻은 결과이며, 이 페이지 시뮬레이터의 예측값은 아닙니다. 본 모델은 측벽 전압, 이온 주입, 파장별 광학 및 열·전류 분포를 계산하지 않습니다.</p>
+    <p>각 수치는 서로 다른 재료·구조·측정 조건의 연구 결과이며 이 축약 시뮬레이터의 검증값은 아닙니다. 본 모델은 논문의 공정·전계·광학·열 분포를 직접 계산하지 않습니다.</p>
   </section>
 </main>
 
