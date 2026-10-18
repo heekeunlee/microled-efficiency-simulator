@@ -347,6 +347,7 @@
     drawChart();
     drawPhotonChart();
     drawCurrentEfficiencyChart();
+    drawLuminanceChart();
   }
 
   function drawPhotonChart() {
@@ -385,7 +386,7 @@
     for (let exp = Math.ceil(minX); exp <= Math.floor(maxX); exp++) {
       const current = Math.pow(10, exp), x = X(current);
       ctx.strokeStyle = '#f0f2f4'; ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.t + ph); ctx.stroke();
-      ctx.fillStyle = '#7b8792'; ctx.textAlign = 'center'; ctx.fillText(prettyCurrent(current), x, h - 22);
+      ctx.fillStyle = '#7b8792'; ctx.textAlign = exp === Math.floor(maxX) ? 'right' : 'center'; ctx.fillText(prettyCurrent(current), exp === Math.floor(maxX) ? x - 2 : x, h - 22);
     }
     ctx.beginPath();
     points.forEach((d, i) => i ? ctx.lineTo(X(d.current), Y(d.photons)) : ctx.moveTo(X(d.current), Y(d.photons)));
@@ -444,6 +445,53 @@
     ctx.fillStyle = '#53616d'; ctx.textAlign = 'center'; ctx.fillText('cd/A', 0, 0); ctx.restore();
   }
 
+  function drawLuminanceChart() {
+    const canvas = $('luminance-chart');
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !state) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const w = rect.width, h = rect.height;
+    const m = { l: 64, r: 18, t: 22, b: 39 };
+    const pw = w - m.l - m.r, ph = h - m.t - m.b;
+    const points = [];
+    for (let i = 0; i <= 80; i++) {
+      const j = Math.pow(10, -1 + 4 * i / 80);
+      const eqe = calculate(state.p, j).eqe;
+      const cdA = currentEfficiencyCdA(eqe, state.p.wavelengthNm);
+      points.push({ j, luminance: cdA * j * 1e4 });
+    }
+    const minX = -1, maxX = 3;
+    const minY = Math.floor(Math.log10(Math.min(...points.map((point) => point.luminance))));
+    const maxY = Math.ceil(Math.log10(Math.max(...points.map((point) => point.luminance))));
+    const yLo = Math.min(minY, maxY - 2), yHi = Math.max(maxY, minY + 1);
+    const X = (j) => m.l + (Math.log10(j) - minX) / (maxX - minX) * pw;
+    const Y = (value) => m.t + ph - (Math.log10(Math.max(value, 1e-12)) - yLo) / (yHi - yLo) * ph;
+    ctx.clearRect(0, 0, w, h);
+    ctx.font = '10px system-ui, sans-serif'; ctx.textBaseline = 'middle';
+    for (let exp = yLo; exp <= yHi; exp++) {
+      const y = Y(Math.pow(10, exp));
+      ctx.strokeStyle = '#e8edf0'; ctx.beginPath(); ctx.moveTo(m.l, y); ctx.lineTo(w - m.r, y); ctx.stroke();
+      ctx.fillStyle = '#7b8792'; ctx.textAlign = 'right'; ctx.fillText(`1e${exp}`, m.l - 8, y);
+    }
+    for (let exp = minX; exp <= maxX; exp++) {
+      const j = Math.pow(10, exp), x = X(j);
+      ctx.strokeStyle = '#f0f2f4'; ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.t + ph); ctx.stroke();
+      ctx.fillStyle = '#7b8792'; ctx.textAlign = exp === maxX ? 'right' : 'center'; ctx.fillText(`${j} A/cm²`, exp === maxX ? x - 2 : x, h - 22);
+    }
+    ctx.beginPath();
+    points.forEach((point, i) => i ? ctx.lineTo(X(point.j), Y(point.luminance)) : ctx.moveTo(X(point.j), Y(point.luminance)));
+    ctx.lineWidth = 3; ctx.strokeStyle = '#16816c'; ctx.lineJoin = 'round'; ctx.stroke();
+    const selectedLuminance = currentEfficiencyCdA(state.result.eqe, state.p.wavelengthNm) * state.p.currentDensity * 1e4;
+    ctx.beginPath(); ctx.arc(X(state.p.currentDensity), Y(selectedLuminance), 6, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = '#105746'; ctx.stroke();
+    ctx.save(); ctx.translate(14, m.t + ph / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#53616d'; ctx.textAlign = 'center'; ctx.fillText('cd/m²', 0, 0); ctx.restore();
+  }
+
   const crossSection = $('cross-section');
   crossSection.addEventListener('pointerover', (event) => {
     const hit = event.target.closest('[data-structure-key]');
@@ -483,6 +531,6 @@
     document.querySelectorAll('.layer-number').forEach((field) => { field.value = $(field.dataset.rangeId).value; });
     update();
   });
-  window.addEventListener('resize', () => { drawChart(); drawPhotonChart(); drawCurrentEfficiencyChart(); });
+  window.addEventListener('resize', () => { drawChart(); drawPhotonChart(); drawCurrentEfficiencyChart(); drawLuminanceChart(); });
   update();
 })();
