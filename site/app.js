@@ -5,6 +5,7 @@
   const q = 1.602176634e-19;
   const h = 6.62607015e-34;
   const c = 299792458;
+  const photopicV10nm = [0.00004, 0.00012, 0.000396, 0.00121, 0.004, 0.0116, 0.023, 0.038, 0.06, 0.091, 0.139, 0.208, 0.323, 0.503, 0.71, 0.862, 0.954, 0.995, 0.995, 0.952, 0.87, 0.757, 0.631, 0.503, 0.381, 0.265, 0.175, 0.107, 0.061, 0.032, 0.017, 0.00821, 0.0041, 0.00209, 0.00105, 0.00052, 0.000249, 0.00012];
   const defaults = { size: 100, current: 0, injection: 100, srv: 2, abulk: 6.69897, bscale: 5, cscale: 0.1, lee: 80, wavelength: 450, substrate: 430, mesa: 80, angle: 85, nucleation: 30, buffer: 800, nlayer: 1800, ndoping: 19, esl: 30, spacer: 200, srl: 3, barrier: 5, well: 1, wells: 1, indium: 15, ebl: 20, aluminum: 5, player: 60, pdoping: 18.5, pcontact: 15, tco: 100, itoRs: 20, metal: 300, alumina: 30, sio2: 300, damage: 200 };
   const sliders = Object.keys(defaults);
   let structureZoom = 1;
@@ -63,6 +64,18 @@
     const units = [[1e15, 'P'], [1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k']];
     for (const [scale, unit] of units) if (v >= scale) return (v / scale).toPrecision(3) + ' ' + unit;
     return v.toPrecision(3);
+  }
+
+  function photopicV(wavelengthNm) {
+    const position = (wavelengthNm - 380) / 10;
+    const index = Math.max(0, Math.min(photopicV10nm.length - 2, Math.floor(position)));
+    const fraction = Math.max(0, Math.min(1, position - index));
+    return photopicV10nm[index] + (photopicV10nm[index + 1] - photopicV10nm[index]) * fraction;
+  }
+
+  function currentEfficiencyCdA(eqe, wavelengthNm) {
+    const wavelengthM = wavelengthNm * 1e-9;
+    return eqe * 683 * photopicV(wavelengthNm) * h * c / (Math.PI * q * wavelengthM);
   }
 
   function prettyPower(watts) {
@@ -333,6 +346,7 @@
     updateOutputs(p, result);
     drawChart();
     drawPhotonChart();
+    drawCurrentEfficiencyChart();
   }
 
   function drawPhotonChart() {
@@ -382,6 +396,54 @@
     ctx.lineWidth = 3; ctx.strokeStyle = '#a44f2b'; ctx.stroke();
   }
 
+  function drawCurrentEfficiencyChart() {
+    const canvas = $('current-efficiency-chart');
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !state) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const w = rect.width, h = rect.height;
+    const m = { l: 64, r: 18, t: 22, b: 39 };
+    const pw = w - m.l - m.r, ph = h - m.t - m.b;
+    const areaCm2 = Math.pow(state.p.sizeUm * 1e-4, 2);
+    const points = [];
+    for (let i = 0; i <= 80; i++) {
+      const j = Math.pow(10, -1 + 4 * i / 80);
+      const current = j * areaCm2;
+      const eqe = calculate(state.p, j).eqe;
+      points.push({ current, cdA: currentEfficiencyCdA(eqe, state.p.wavelengthNm) });
+    }
+    const minX = Math.log10(points[0].current), maxX = Math.log10(points[points.length - 1].current);
+    const maxY = Math.max(...points.map((point) => point.cdA)) * 1.08 || 1;
+    const X = (current) => m.l + (Math.log10(current) - minX) / (maxX - minX) * pw;
+    const Y = (cdA) => m.t + ph - cdA / maxY * ph;
+    ctx.clearRect(0, 0, w, h);
+    ctx.font = '10px system-ui, sans-serif'; ctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+      const value = maxY * i / 4, y = Y(value);
+      ctx.strokeStyle = '#e8edf0'; ctx.beginPath(); ctx.moveTo(m.l, y); ctx.lineTo(w - m.r, y); ctx.stroke();
+      ctx.fillStyle = '#7b8792'; ctx.textAlign = 'right';
+      ctx.fillText(value === 0 ? '0' : value.toPrecision(2), m.l - 8, y);
+    }
+    for (let exp = Math.ceil(minX); exp <= Math.floor(maxX); exp++) {
+      const current = Math.pow(10, exp), x = X(current);
+      ctx.strokeStyle = '#f0f2f4'; ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.t + ph); ctx.stroke();
+      ctx.fillStyle = '#7b8792'; ctx.textAlign = 'center'; ctx.fillText(prettyCurrent(current), x, h - 22);
+    }
+    ctx.beginPath();
+    points.forEach((point, i) => i ? ctx.lineTo(X(point.current), Y(point.cdA)) : ctx.moveTo(X(point.current), Y(point.cdA)));
+    ctx.lineWidth = 3; ctx.strokeStyle = '#7358c5'; ctx.lineJoin = 'round'; ctx.stroke();
+    const current = state.p.currentDensity * areaCm2;
+    const selectedCdA = currentEfficiencyCdA(state.result.eqe, state.p.wavelengthNm);
+    ctx.beginPath(); ctx.arc(X(current), Y(selectedCdA), 6, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = '#4c388c'; ctx.stroke();
+    ctx.save(); ctx.translate(14, m.t + ph / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#53616d'; ctx.textAlign = 'center'; ctx.fillText('cd/A', 0, 0); ctx.restore();
+  }
+
   const crossSection = $('cross-section');
   crossSection.addEventListener('pointerover', (event) => {
     const hit = event.target.closest('[data-structure-key]');
@@ -421,6 +483,6 @@
     document.querySelectorAll('.layer-number').forEach((field) => { field.value = $(field.dataset.rangeId).value; });
     update();
   });
-  window.addEventListener('resize', () => { drawChart(); drawPhotonChart(); });
+  window.addEventListener('resize', () => { drawChart(); drawPhotonChart(); drawCurrentEfficiencyChart(); });
   update();
 })();
