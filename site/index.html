@@ -158,6 +158,41 @@
       </section>
       </div>
 
+      <section class="panel graph-methods" aria-labelledby="graph-methods-title">
+        <div class="section-head"><div><span class="step">D</span><h2 id="graph-methods-title">그래프별 계산 이론과 근거</h2></div></div>
+        <div class="graph-method-grid">
+          <article class="graph-method">
+            <h3>B · 전류밀도에 따른 EQE</h3>
+            <p>전류밀도로 활성층에 공급되는 캐리어 생성률을 계산하고, SRH·방사·오제 재결합이 균형을 이루는 정상상태 캐리어 밀도 n을 풉니다.</p>
+            <code>G = η<sub>inj</sub>J/(q d<sub>MQW</sub>) = A<sub>eff</sub>n + Bn² + Cn³<br>A<sub>eff</sub> = A<sub>bulk</sub> + 4S/w<br>EQE = η<sub>inj</sub> · (Bn²/G) · LEE</code>
+            <p>정사각 픽셀에서 둘레/면적 비를 4/w로 근사합니다. 낮은 전류밀도에서는 A 항과 측벽 손실, 높은 전류밀도에서는 C 항에 따른 효율 저하가 곡선에 반영됩니다.</p>
+            <p class="graph-method-source"><strong>근거:</strong> <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8064358/" target="_blank" rel="noreferrer">ABC 모델과 전류 기반 재결합률 (2021)</a> · <a href="https://onlinelibrary.wiley.com/doi/10.1002/lpor.202500791" target="_blank" rel="noreferrer">마이크로 LED 측벽 항 4S/D (2025)</a></p>
+          </article>
+          <article class="graph-method">
+            <h3>B2 · 입력 전류에 따른 포톤 출력</h3>
+            <p>픽셀 면적과 전류밀도로 단자 전류를 구한 뒤, EQE를 곱해 픽셀 밖으로 나오는 초당 포톤 수를 추정합니다.</p>
+            <code>I = J · A<sub>pixel</sub><br>Ṅ<sub>γ,out</sub> = EQE · I/q 　[photons/s]</code>
+            <p>EQE는 단자에 들어온 전자당 외부로 나온 포톤 수이므로 주입·내부 재결합·광추출 손실을 포함합니다. x축과 y축은 로그 눈금이며, 원은 현재 설정입니다.</p>
+            <p class="graph-method-source"><strong>근거:</strong> 외부양자효율 정의 및 전류 주입 ABC 해석은 <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8064358/" target="_blank" rel="noreferrer">마이크로 LED 크기 의존 전기발광 연구 (2021)</a>를 참고했습니다.</p>
+          </article>
+          <article class="graph-method">
+            <h3>B3 · 입력 전류에 따른 전류효율</h3>
+            <p>각 전류에서 계산한 EQE를 설정 파장의 사람 눈 시감도에 가중해 정면 광도를 전류로 나눕니다.</p>
+            <code>η<sub>I</sub> = EQE · 683V(λ)hc/(πqλ)　[cd/A]</code>
+            <p>단색광과 Lambertian 각도 분포를 가정합니다. CIE V(λ)는 10 nm 간격 표본을 선형 보간하며, 곡선의 전류축은 로그, cd/A 축은 선형입니다. 원은 현재 동작점입니다.</p>
+            <p class="graph-method-source"><strong>근거:</strong> <a href="https://cie.co.at/datatable/cie-spectral-luminous-efficiency-photopic-vision" target="_blank" rel="noreferrer">CIE 2° 명소시 V(λ) 데이터</a> · <a href="https://cie.co.at/eilvterm/17-21-090" target="_blank" rel="noreferrer">광도 환산 상수 683 lm/W</a>.</p>
+          </article>
+          <article class="graph-method">
+            <h3>B4 · 전류밀도에 따른 정면 휘도</h3>
+            <p>Lambertian 평면 발광체에서 정면 휘도는 전류효율과 전류밀도의 곱으로 환산됩니다.</p>
+            <code>L<sub>v</sub> = η<sub>I</sub> · J<sub>A/m²</sub><br>= η<sub>I</sub> · 10⁴J<sub>A/cm²</sub>　[cd/m²]</code>
+            <p>전류밀도와 휘도 모두 로그축입니다. 원은 현재 설정점입니다. 패널의 실제 스펙트럼, 각도 분포, 구동 회로, 열·전류 확산은 계산하지 않습니다.</p>
+            <p class="graph-method-source"><strong>근거:</strong> B3의 CIE 광도 환산과 Lambertian 관계를 사용한 파생량입니다. 실측 비교 시 같은 발광 면적·정면 측정 방향·전류밀도를 적용해야 합니다.</p>
+          </article>
+        </div>
+        <p class="graph-method-limit">모든 곡선은 사용자가 설정한 축약 ABC 모델의 추정치입니다. 소자별 A/B/C 계수와 측벽 재결합 속도를 실험값으로 보정하기 전에는 제품 사양이나 측정 결과로 해석하지 마세요.</p>
+      </section>
+
       <section class="panel equation-panel">
         <div class="section-head"><div><span class="step">C</span><h2 data-en="What the model calculates">계산에 쓰는 모델</h2></div></div>
         <div class="equations"><code>G = A<sub>eff</sub>n + Bn² + Cn³</code><code>A<sub>eff</sub> = A<sub>bulk</sub> + S · 4 / w</code><code>IQE = Bn² / G</code><code>EQE = η<sub>inj</sub> · IQE · LEE</code></div>
