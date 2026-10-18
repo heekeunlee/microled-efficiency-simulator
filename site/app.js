@@ -269,6 +269,8 @@
       field.type = 'number';
       field.className = 'layer-number';
       field.dataset.rangeId = range.id;
+      field.inputMode = 'decimal';
+      field.enterKeyHint = 'done';
       field.setAttribute('aria-label', `${label ? label.textContent.trim() : range.id} 값`);
       field.min = range.min;
       field.max = range.max;
