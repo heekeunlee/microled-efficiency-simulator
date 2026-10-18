@@ -194,7 +194,7 @@
     notes.push({ title: '메사 식각 프로파일', detail: `${layers.angle}° 측벽 · 폭 ${layers.mesa}%`, color: '#56616b', cy: topY + sidewallH * .82, side: 'right', key: 'profile', anchorX: mesaR - sideShift * .82 });
     function drawNotes(sideName) {
       const items = notes.filter((n) => n.side === sideName).sort((a, b) => a.cy - b.cy);
-      const tx = sideName === 'left' ? 16 : 730, lx = sideName === 'left' ? 290 : 720;
+      const tx = sideName === 'left' ? 280 : 730, lx = sideName === 'left' ? 290 : 720;
       const minSlot = 42, maxSlot = bottom + 80, gap = Math.min(28, (maxSlot - minSlot) / Math.max(1, items.length - 1));
       const slots = items.map((item) => Math.max(minSlot, Math.min(maxSlot, item.cy)));
       for (let i = 1; i < slots.length; i++) slots[i] = Math.max(slots[i], slots[i - 1] + gap);
@@ -205,8 +205,9 @@
       return items.map((item, i) => {
         const edge = item.anchorX ?? (sideName === 'left' ? fullL : mesaR);
         const elbow = sideName === 'left' ? Math.min(lx, edge - 8) : Math.max(lx, edge + 8);
-        const labelEdge = sideName === 'left' ? 296 : 724;
-        return `<g class="structure-callout" data-structure-key="${item.key}" tabindex="0" role="button" aria-label="${item.title}: ${item.detail}"><path d="M${edge} ${item.cy}H${elbow}L${labelEdge} ${slots[i]}" fill="none" stroke="${item.color}" stroke-width="1.5"/><circle cx="${edge}" cy="${item.cy}" r="3" fill="${item.color}"/><text x="${tx}" y="${slots[i] - 2}" class="svg-callout-title">${item.title}</text><text x="${tx}" y="${slots[i] + 12}" class="svg-callout-detail">${item.detail}</text></g>`;
+        const labelEdge = sideName === 'left' ? 286 : 724;
+        const textAnchor = sideName === 'left' ? 'end' : 'start';
+        return `<g class="structure-callout" data-structure-key="${item.key}" tabindex="0" role="button" aria-label="${item.title}: ${item.detail}"><path d="M${edge} ${item.cy}H${elbow}L${labelEdge} ${slots[i]}" fill="none" stroke="${item.color}" stroke-width="2"/><circle cx="${edge}" cy="${item.cy}" r="3.5" fill="${item.color}"/><circle cx="${labelEdge}" cy="${slots[i]}" r="2.7" fill="${item.color}"/><text x="${tx}" y="${slots[i] - 2}" text-anchor="${textAnchor}" class="svg-callout-title">${item.title}</text><text x="${tx}" y="${slots[i] + 12}" text-anchor="${textAnchor}" class="svg-callout-detail">${item.detail}</text></g>`;
       }).join('');
     }
 
