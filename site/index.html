@@ -147,6 +147,12 @@
         <div class="section-head"><div><span class="step">C</span><h2 data-en="What the model calculates">계산에 쓰는 모델</h2></div></div>
         <div class="equations"><code>G = A<sub>eff</sub>n + Bn² + Cn³</code><code>A<sub>eff</sub> = A<sub>bulk</sub> + S · 4 / w</code><code>IQE = Bn² / G</code><code>EQE = η<sub>inj</sub> · IQE · LEE</code></div>
         <p data-en="At each current density, the model solves for the steady-state carrier density n. It then estimates radiative output, including bulk and sidewall Shockley–Read–Hall losses and Auger recombination.">각 전류밀도에서 정상상태 캐리어 밀도 n을 구합니다. 벌크·측벽 쇼클리–리드–홀(SRH) 손실과 오제 재결합을 포함해 방사 출력을 추정합니다.</p>
+        <div class="photometric-note">
+          <h3 data-en="Estimated current efficiency (cd/A)">추정 전류효율 (cd/A)</h3>
+          <code>η<sub>I</sub> = EQE × 683 × V(λ) × hc / (πqλ)</code>
+          <p>EQE에서 초당 출광 포톤 수(EQE/q)를 구하고, 광자 에너지(hc/λ)와 CIE 시감도(683V(λ) lm/W)를 적용합니다. Lambertian 출광이면 광속(lm)을 π로 나누어 정면 광도(cd)로 환산합니다.</p>
+          <p class="photometric-assumptions"><strong>가정과 비교 조건</strong> 단색광(설정 파장), Lambertian 각도 분포, CIE 2° 명소시 시감도를 가정한 추정치입니다. 측정된 광대역 스펙트럼·각도 분포·패널 광학층은 반영하지 않습니다. Lambertian 평면 발광체의 실측 비교식은 cd/A = L/J (L: 정면 휘도, J: 전류밀도)입니다. 시감도 함수: <a href="https://cie.co.at/datatable/cie-spectral-luminous-efficiency-photopic-vision" target="_blank" rel="noreferrer">CIE photopic V(λ) 데이터</a>.</p>
+        </div>
         <details class="limits"><summary data-en="Scope and limitations">범위와 한계</summary><ul>
           <li data-en="Uniform carrier density and current spreading are assumed. Leakage, self-heating, polarization fields, photon recycling and wavelength-dependent extraction are not solved.">캐리어 밀도와 전류가 균일하다고 가정합니다. 누설, 발열, 분극 전계, 광자 재활용, 파장별 광추출은 계산하지 않습니다.</li>
           <li data-en="The square-pixel perimeter/area term is a first-order geometry estimate. Nanowire or non-square devices need a matching geometry model.">정사각 픽셀의 둘레/면적 항은 1차 형상 근사입니다. 나노와이어나 비정사각 소자는 형상에 맞게 모델을 바꿔야 합니다.</li>

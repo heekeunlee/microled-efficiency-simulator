@@ -58,6 +58,7 @@ a{color:#087b72;text-decoration:none}
 .chart-intro{margin:0;color:#74818b;font-size:.78rem}.chart-panel canvas{display:block;width:100%;height:240px;margin-top:4px}
 .chart-foot{display:flex;justify-content:space-between;gap:12px;padding-top:9px;border-top:1px solid #edf0f3;color:#71808b;font-size:.7rem}.chart-foot #surface-loss{font-weight:700;color:#9c6042;text-align:right}
 .equation-panel>p{margin:13px 0;color:#6e7b85;font-size:.78rem;line-height:1.55}
+.photometric-note{margin-top:14px;padding:13px 14px;border:1px solid #dcebe8;border-radius:10px;background:#f7fbfa}.photometric-note h3{margin:0 0 8px;color:#315166;font-size:.84rem}.photometric-note>code{display:block;padding:9px 10px;border-radius:7px;background:#fff;color:#087b72;text-align:center;font-size:.9rem}.photometric-note p{margin:9px 0 0;color:#657581;font-size:.76rem;line-height:1.55}.photometric-note .photometric-assumptions{color:#53616d}.photometric-note a{color:#087b72;text-decoration:underline;text-underline-offset:2px}
 .equations{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.equations code{padding:10px 12px;border:1px solid #e8edf0;border-radius:9px;background:#f8fafb;color:#315166;text-align:center;font-size:.84rem;white-space:nowrap}
 .limits{padding-top:11px;border-top:1px solid #edf0f3;color:#4e5d69;font-size:.78rem}.limits ul{padding-left:19px;color:#6c7984;line-height:1.55}.limits li+li{margin-top:6px}
 .page-credit{margin:24px 0 0;text-align:center;color:#84909a;font-size:.75rem}.page-credit a{color:#087b72}
