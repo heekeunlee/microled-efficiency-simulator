@@ -98,6 +98,10 @@
     <div class="led-results">
       <section class="panel structure-panel">
         <div class="section-head"><div><span class="step">A</span><h2 data-en="2D cross-section">2D 단면 구조</h2></div><span class="micro-tag" data-en="SCHEMATIC">개념도</span></div>
+        <div class="structure-tools" role="group" aria-label="단면 확대·축소">
+          <span>도형이나 명칭을 선택해 레이어 강조</span>
+          <div><button id="zoom-out" type="button" aria-label="단면 축소" title="축소">−</button><output id="zoom-level">100%</output><button id="zoom-in" type="button" aria-label="단면 확대" title="확대">+</button><button id="zoom-reset" type="button">초기화</button></div>
+        </div>
         <div class="structure-graphic">
           <svg id="cross-section" viewBox="0 0 1000 450" role="img" aria-labelledby="cross-title cross-desc">
             <title id="cross-title">마이크로 LED 에피택시·메사 단면 구조</title><desc id="cross-desc">사파이어부터 n-GaN, 전자 확산층, 스페이서, 응력 완화 초격자, 다중양자우물, 전자 차단층, p-GaN, ITO와 금속 전극까지의 단면입니다. 메사 측벽에는 식각 손상 영역과 이중 패시베이션막이 표시됩니다.</desc>

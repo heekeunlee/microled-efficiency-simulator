@@ -7,6 +7,8 @@
   const c = 299792458;
   const defaults = { size: 100, current: 0, injection: 100, srv: 2, abulk: 6, bscale: 5, cscale: 0.1, lee: 80, wavelength: 450, substrate: 430, mesa: 80, angle: 85, nucleation: 30, buffer: 800, nlayer: 1800, ndoping: 19, esl: 30, spacer: 200, srl: 3, barrier: 5, well: 1, wells: 1, indium: 15, ebl: 20, aluminum: 5, player: 60, pdoping: 18.5, pcontact: 15, tco: 100, itoRs: 20, metal: 300, alumina: 30, sio2: 300, damage: 200 };
   const sliders = Object.keys(defaults);
+  let structureZoom = 1;
+  let selectedStructureKey = null;
   let state = null;
 
   function read() {
@@ -148,24 +150,24 @@
       const hh = H[key]; if (!hh) return;
       y -= hh; pos[key] = { y, h: hh, x, w: width };
       const clip = width === mesaW && ['esl', 'spacer', 'srl', 'ebl', 'player', 'pcontact', 'tco'].includes(key) ? ' clip-path="url(#mesa-clip)"' : '';
-      shapes.push(`<rect x="${x}" y="${y}" width="${width}" height="${hh}" fill="${color}" stroke="#fff" stroke-width="1"${clip}/>`);
-      notes.push({ title, detail, color, cy: y + hh / 2, side, key });
+      shapes.push(`<g class="structure-item" data-structure-key="${key}"><rect x="${x}" y="${y}" width="${width}" height="${hh}" fill="${color}" stroke="#fff" stroke-width="1"${clip}/></g>`);
+      notes.push({ title, detail, color, cy: y + hh / 2, side, key, anchorX: side === 'left' ? x : x + width });
     }
     add('substrate', '패턴 사파이어 기판', `${layers.substrate} nm`, '#dfe6ec', fullW, fullL, 'left');
-    shapes.push(`<path d="M${fullL} ${pos.substrate.y}l10-8 10 8 10-8 10 8 10-8 10 8h${fullW - 60}" fill="#c5d4df" stroke="#aebfca"/>`);
+    shapes.push(`<g class="structure-item" data-structure-key="substrate"><path d="M${fullL} ${pos.substrate.y}l10-8 10 8 10-8 10 8 10-8 10 8h${fullW - 60}" fill="#c5d4df" stroke="#aebfca"/></g>`);
     add('nucleation', '저온 핵생성층', `AlN/GaN · ${layers.nucleation} nm`, '#bdc6d4', fullW, fullL, 'left');
     add('buffer', 'UID-GaN 버퍼·템플릿', `${layers.buffer} nm`, '#a9c9e5', fullW, fullL, 'left');
     add('nlayer', 'n-GaN:Si 접촉층', `${layers.nlayer} nm · 1e${layers.ndoping} cm⁻³`, '#7eafe2', fullW, fullL, 'left');
     add('esl', 'n-AlGaN 전자 확산층', `${layers.esl} nm`, '#8ec9d1', mesaW, undefined, 'left');
     add('spacer', 'n-GaN 스페이서', `${layers.spacer} nm`, '#9ac7e9', mesaW, undefined, 'left');
     add('srl', 'InGaN/GaN 응력 완화 초격자', `${layers.srl} periods`, '#b8a8dc', mesaW, undefined, 'left');
-    if (H.srl) for (let i = 1; i < layers.srl; i++) shapes.push(`<path d="M${mesaL} ${pos.srl.y + i * H.srl / layers.srl}h${mesaW}" stroke="#f6f2ff"/>`);
+    if (H.srl) for (let i = 1; i < layers.srl; i++) shapes.push(`<path class="structure-item" data-structure-key="srl" d="M${mesaL} ${pos.srl.y + i * H.srl / layers.srl}h${mesaW}" stroke="#f6f2ff"/>`);
     y -= H.mqw; pos.mqw = { y, h: H.mqw, x: mesaL, w: mesaW };
     for (let i = 0; i < layers.wells; i++) {
       const ph = H.mqw / layers.wells, py = y + i * ph;
-      shapes.push(`<rect x="${mesaL}" y="${py}" width="${mesaW}" height="${ph * .48}" fill="${emissionColor}" stroke="#fff4dd" stroke-width="1" clip-path="url(#mesa-clip)"/><rect x="${mesaL}" y="${py + ph * .48}" width="${mesaW}" height="${ph * .52}" fill="#c7d9ef" stroke="#fff" stroke-width=".7" clip-path="url(#mesa-clip)"/>`);
+      shapes.push(`<g class="structure-item" data-structure-key="mqw"><rect x="${mesaL}" y="${py}" width="${mesaW}" height="${ph * .48}" fill="${emissionColor}" stroke="#fff4dd" stroke-width="1" clip-path="url(#mesa-clip)"/><rect x="${mesaL}" y="${py + ph * .48}" width="${mesaW}" height="${ph * .52}" fill="#c7d9ef" stroke="#fff" stroke-width=".7" clip-path="url(#mesa-clip)"/></g>`);
     }
-    notes.push({ title: 'InGaN/GaN 다중양자우물', detail: `In ${layers.indium}% · ${layers.wells} × (${layers.well}/${layers.barrier} nm)`, color: '#f0ad45', cy: y + H.mqw / 2, side: 'right', key: 'mqw' });
+    notes.push({ title: 'InGaN/GaN 다중양자우물', detail: `In ${layers.indium}% · ${layers.wells} × (${layers.well}/${layers.barrier} nm)`, color: '#f0ad45', cy: y + H.mqw / 2, side: 'right', key: 'mqw', anchorX: mesaR });
     add('ebl', 'p-AlGaN 전자 차단층', `${layers.ebl} nm · Al ${layers.aluminum}%`, '#d89fbd', mesaW, undefined, 'right');
     add('player', 'p-GaN:Mg 정공 주입층', `${layers.player} nm · 1e${layers.pdoping} cm⁻³`, '#9bd7ca', mesaW, undefined, 'right');
     add('pcontact', 'p++-GaN 접촉층', `${layers.pcontact} nm`, '#67bca9', mesaW, undefined, 'right');
@@ -181,26 +183,44 @@
     const leftSio2 = `M${mesaL - damageW - aluminaW - sio2W} ${topY}L${mesaL - damageW - aluminaW} ${topY}L${mesaL + sideShift - damageW - aluminaW} ${nSurface}L${mesaL + sideShift - damageW - aluminaW - sio2W} ${nSurface}Z`;
     const rightAlumina = `M${mesaR + damageW} ${topY}L${mesaR + damageW + aluminaW} ${topY}L${mesaR - sideShift + damageW + aluminaW} ${nSurface}L${mesaR - sideShift + damageW} ${nSurface}Z`;
     const rightSio2 = `M${mesaR + damageW + aluminaW} ${topY}L${mesaR + damageW + aluminaW + sio2W} ${topY}L${mesaR - sideShift + damageW + aluminaW + sio2W} ${nSurface}L${mesaR - sideShift + damageW + aluminaW} ${nSurface}Z`;
-    const side = `<rect x="${leftWall}" y="${damageY}" width="${damageW}" height="${damageH}" fill="url(#damage-pattern)" stroke="#c94b4b"/><rect x="${rightWall - damageW}" y="${damageY}" width="${damageW}" height="${damageH}" fill="url(#damage-pattern)" stroke="#c94b4b"/><path d="${leftAlumina}" fill="#8c79cf" stroke="#fff"/><path d="${leftSio2}" fill="#b5a8e8" stroke="#fff"/><path d="${rightAlumina}" fill="#8c79cf" stroke="#fff"/><path d="${rightSio2}" fill="#b5a8e8" stroke="#fff"/><rect x="${fullR - 46}" y="${pos.nlayer.y - 10}" width="38" height="10" rx="2" fill="#d6b752"/>`;
+    const side = `<g class="structure-item" data-structure-key="damage"><rect x="${leftWall}" y="${damageY}" width="${damageW}" height="${damageH}" fill="url(#damage-pattern)" stroke="#c94b4b"/><rect x="${rightWall - damageW}" y="${damageY}" width="${damageW}" height="${damageH}" fill="url(#damage-pattern)" stroke="#c94b4b"/></g><g class="structure-item" data-structure-key="alumina"><path d="${leftAlumina}" fill="#8c79cf" stroke="#fff"/><path d="${rightAlumina}" fill="#8c79cf" stroke="#fff"/></g><g class="structure-item" data-structure-key="sio2"><path d="${leftSio2}" fill="#b5a8e8" stroke="#fff"/><path d="${rightSio2}" fill="#b5a8e8" stroke="#fff"/></g><g class="structure-item" data-structure-key="npad"><rect x="${fullR - 46}" y="${pos.nlayer.y - 10}" width="38" height="10" rx="2" fill="#d6b752"/></g><path class="structure-item profile-outline" data-structure-key="profile" d="M${mesaL} ${topY}L${mesaR} ${topY}L${mesaR - sideShift} ${nSurface}L${mesaL + sideShift} ${nSurface}Z"/>`;
     const clipDefs = `<defs><clipPath id="mesa-clip"><path d="M${mesaL} ${topY}L${mesaR} ${topY}L${mesaR - sideShift} ${nSurface}L${mesaL + sideShift} ${nSurface}Z"/></clipPath></defs>`;
-    $('device-layers').innerHTML = clipDefs + shapes.join('') + `<text x="500" y="${pos.substrate.y + H.substrate / 2 + 4}" text-anchor="middle" class="svg-layer-inside">Sapphire</text><text x="${fullR - 27}" y="${pos.nlayer.y - 14}" text-anchor="middle" class="svg-layer-small">n-pad</text>`;
+    $('device-layers').innerHTML = clipDefs + shapes.join('') + `<g class="structure-item" data-structure-key="substrate"><text x="500" y="${pos.substrate.y + H.substrate / 2 + 4}" text-anchor="middle" class="svg-layer-inside">Sapphire</text></g><g class="structure-item" data-structure-key="npad"><text x="${fullR - 27}" y="${pos.nlayer.y - 14}" text-anchor="middle" class="svg-layer-small">n-pad</text></g>`;
     $('sidewall-structure').innerHTML = side;
-    notes.push({ title: 'ICP 식각 손상대', detail: `${layers.damage} nm · MQW 측벽`, color: '#c94b4b', cy: mqw.y + mqw.h / 2, side: 'right', key: 'damage' });
-    notes.push({ title: 'ALD Al₂O₃ 계면 패시베이션', detail: `${layers.alumina} nm`, color: '#8c79cf', cy: topY + sidewallH * .42, side: 'right', key: 'alumina' });
-    notes.push({ title: 'PECVD SiO₂ 절연 오버코트', detail: `${layers.sio2} nm`, color: '#b5a8e8', cy: topY + sidewallH * .66, side: 'right', key: 'sio2' });
-    notes.push({ title: 'n-금속 접촉 패드', detail: '메사 노출 n-GaN', color: '#d6b752', cy: pos.nlayer.y - 5, side: 'left', key: 'npad' });
-    notes.push({ title: '메사 식각 프로파일', detail: `${layers.angle}° 측벽 · 폭 ${layers.mesa}%`, color: '#56616b', cy: topY + sidewallH * .82, side: 'right', key: 'profile' });
+    notes.push({ title: 'ICP 식각 손상대', detail: `${layers.damage} nm · MQW 측벽`, color: '#c94b4b', cy: mqw.y + mqw.h / 2, side: 'right', key: 'damage', anchorX: rightWall });
+    notes.push({ title: 'ALD Al₂O₃ 계면 패시베이션', detail: `${layers.alumina} nm`, color: '#8c79cf', cy: topY + sidewallH * .42, side: 'right', key: 'alumina', anchorX: mesaR - sideShift * .42 + damageW + aluminaW / 2 });
+    notes.push({ title: 'PECVD SiO₂ 절연 오버코트', detail: `${layers.sio2} nm`, color: '#b5a8e8', cy: topY + sidewallH * .66, side: 'right', key: 'sio2', anchorX: mesaR - sideShift * .66 + damageW + aluminaW + sio2W / 2 });
+    notes.push({ title: 'n-금속 접촉 패드', detail: '메사 노출 n-GaN', color: '#d6b752', cy: pos.nlayer.y - 5, side: 'right', key: 'npad', anchorX: fullR - 8 });
+    notes.push({ title: '메사 식각 프로파일', detail: `${layers.angle}° 측벽 · 폭 ${layers.mesa}%`, color: '#56616b', cy: topY + sidewallH * .82, side: 'right', key: 'profile', anchorX: mesaR - sideShift * .82 });
     function drawNotes(sideName) {
       const items = notes.filter((n) => n.side === sideName).sort((a, b) => a.cy - b.cy);
       const tx = sideName === 'left' ? 18 : 755, lx = sideName === 'left' ? 255 : 735;
       const slots = items.map((_, i) => 52 + i * (340 / Math.max(1, items.length - 1)));
       return items.map((item, i) => {
-        const edge = sideName === 'left' ? (item.key === 'substrate' || item.key === 'nucleation' || item.key === 'buffer' || item.key === 'nlayer' ? fullL : mesaL) : (['damage', 'alumina', 'sio2'].includes(item.key) ? mesaR + damageW + aluminaW : mesaR);
+        const edge = item.anchorX ?? (sideName === 'left' ? fullL : mesaR);
         const elbow = sideName === 'left' ? Math.min(lx, edge - 8) : Math.max(lx, edge + 8);
-        return `<path d="M${edge} ${item.cy}H${elbow}L${sideName === 'left' ? 246 : 746} ${slots[i]}" fill="none" stroke="${item.color}" stroke-width="1.1"/><circle cx="${edge}" cy="${item.cy}" r="2.2" fill="${item.color}"/><text x="${tx}" y="${slots[i] - 2}" class="svg-callout-title">${item.title}</text><text x="${tx}" y="${slots[i] + 12}" class="svg-callout-detail">${item.detail}</text>`;
+        return `<g class="structure-callout" data-structure-key="${item.key}" tabindex="0" role="button" aria-label="${item.title}: ${item.detail}"><path d="M${edge} ${item.cy}H${elbow}L${sideName === 'left' ? 246 : 746} ${slots[i]}" fill="none" stroke="${item.color}" stroke-width="1.5"/><circle cx="${edge}" cy="${item.cy}" r="3" fill="${item.color}"/><text x="${tx}" y="${slots[i] - 2}" class="svg-callout-title">${item.title}</text><text x="${tx}" y="${slots[i] + 12}" class="svg-callout-detail">${item.detail}</text></g>`;
       }).join('');
     }
+
+  function updateStructureHighlight(hoverKey) {
+    const activeKey = hoverKey || selectedStructureKey;
+    document.querySelectorAll('#cross-section [data-structure-key]').forEach((element) => {
+      element.classList.toggle('is-highlighted', Boolean(activeKey) && element.dataset.structureKey === activeKey);
+      element.classList.toggle('is-dimmed', Boolean(activeKey) && element.dataset.structureKey !== activeKey);
+      if (element.classList.contains('structure-callout')) element.setAttribute('aria-pressed', String(element.dataset.structureKey === selectedStructureKey));
+    });
+  }
+
+  function setStructureZoom(nextZoom) {
+    structureZoom = Math.max(0.65, Math.min(2.2, Math.round(nextZoom * 100) / 100));
+    const svg = $('cross-section');
+    svg.style.width = `${structureZoom * 100}%`;
+    svg.style.minWidth = `${800 * structureZoom}px`;
+    $('zoom-level').textContent = `${Math.round(structureZoom * 100)}%`;
+  }
     $('device-callouts').innerHTML = drawNotes('left') + drawNotes('right');
+    updateStructureHighlight(null);
     const glow = wavelengthColor(wavelengthNm);
     $('photon-arrows').setAttribute('stroke', glow.color);
     $('wavelength-swatch').style.backgroundColor = glow.color;
@@ -315,6 +335,38 @@
     ctx.beginPath(); ctx.arc(X(current), Y(photons), 6, 0, Math.PI * 2); ctx.fillStyle = '#fff'; ctx.fill();
     ctx.lineWidth = 3; ctx.strokeStyle = '#a44f2b'; ctx.stroke();
   }
+
+  const crossSection = $('cross-section');
+  crossSection.addEventListener('pointerover', (event) => {
+    const hit = event.target.closest('[data-structure-key]');
+    if (hit) updateStructureHighlight(hit.dataset.structureKey);
+  });
+  crossSection.addEventListener('pointerout', (event) => {
+    const hit = event.target.closest('[data-structure-key]');
+    const next = event.relatedTarget instanceof Element ? event.relatedTarget.closest('[data-structure-key]') : null;
+    if (hit && (!next || next.dataset.structureKey !== hit.dataset.structureKey)) updateStructureHighlight(next?.dataset.structureKey || null);
+  });
+  crossSection.addEventListener('click', (event) => {
+    const hit = event.target.closest('[data-structure-key]');
+    if (!hit) return;
+    selectedStructureKey = selectedStructureKey === hit.dataset.structureKey ? null : hit.dataset.structureKey;
+    updateStructureHighlight(hit.dataset.structureKey);
+  });
+  crossSection.addEventListener('keydown', (event) => {
+    if ((event.key === 'Enter' || event.key === ' ') && event.target.classList.contains('structure-callout')) {
+      event.preventDefault();
+      selectedStructureKey = selectedStructureKey === event.target.dataset.structureKey ? null : event.target.dataset.structureKey;
+      updateStructureHighlight(event.target.dataset.structureKey);
+    }
+  });
+  $('zoom-in').addEventListener('click', () => setStructureZoom(structureZoom + 0.2));
+  $('zoom-out').addEventListener('click', () => setStructureZoom(structureZoom - 0.2));
+  $('zoom-reset').addEventListener('click', () => setStructureZoom(1));
+  crossSection.addEventListener('wheel', (event) => {
+    if (!event.ctrlKey && !event.metaKey) return;
+    event.preventDefault();
+    setStructureZoom(structureZoom + (event.deltaY < 0 ? 0.1 : -0.1));
+  }, { passive: false });
 
   sliders.forEach((id) => $(id).addEventListener('input', update));
   $('reset').addEventListener('click', () => {
