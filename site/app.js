@@ -210,6 +210,24 @@
       }).join('');
     }
 
+    $('device-callouts').innerHTML = drawNotes('left') + drawNotes('right');
+    updateStructureHighlight(null);
+    const glow = wavelengthColor(wavelengthNm);
+    $('photon-arrows').setAttribute('stroke', glow.color);
+    $('wavelength-swatch').style.backgroundColor = glow.color;
+    $('wavelength-swatch').style.boxShadow = `0 0 14px ${glow.color}`;
+    $('active-swatch').style.backgroundColor = glow.color;
+    $('wavelength-color').textContent = `${glow.name} · ${wavelengthNm} nm`;
+    $('wavelength-color').style.color = glow.color;
+    $('photon-arrows').innerHTML = [0.42, 0.5, 0.58].map((f, i) => {
+      const x = mesaL + f * mesaW, origin = mqw.y + mqw.h / 2;
+      const rise = i === 1 ? 82 : 62, tip = origin - rise;
+      return `<path d="M${x} ${origin}v-${rise}"/><path d="m${x - 5} ${tip + 7} 5-7 5 7"/>`;
+    }).join('');
+    $('mesa-dimension').setAttribute('d', `M${mesaL} 426v6m0-3h${mesaW}m0-3v6`);
+    $('size-label').textContent = `${sizeUm} μm pixel · mesa ${Math.round(mesaW / fullW * 100)}%`;
+  }
+
   function updateStructureHighlight(hoverKey) {
     const activeKey = hoverKey || selectedStructureKey;
     document.querySelectorAll('#cross-section [data-structure-key]').forEach((element) => {
@@ -260,23 +278,6 @@
         if (event.key === 'Enter') field.blur();
       });
     });
-  }
-    $('device-callouts').innerHTML = drawNotes('left') + drawNotes('right');
-    updateStructureHighlight(null);
-    const glow = wavelengthColor(wavelengthNm);
-    $('photon-arrows').setAttribute('stroke', glow.color);
-    $('wavelength-swatch').style.backgroundColor = glow.color;
-    $('wavelength-swatch').style.boxShadow = `0 0 14px ${glow.color}`;
-    $('active-swatch').style.backgroundColor = glow.color;
-    $('wavelength-color').textContent = `${glow.name} · ${wavelengthNm} nm`;
-    $('wavelength-color').style.color = glow.color;
-    $('photon-arrows').innerHTML = [0.42, 0.5, 0.58].map((f, i) => {
-      const x = mesaL + f * mesaW, origin = mqw.y + mqw.h / 2;
-      const rise = i === 1 ? 82 : 62, tip = origin - rise;
-      return `<path d="M${x} ${origin}v-${rise}"/><path d="m${x - 5} ${tip + 7} 5-7 5 7"/>`;
-    }).join('');
-    $('mesa-dimension').setAttribute('d', `M${mesaL} 426v6m0-3h${mesaW}m0-3v6`);
-    $('size-label').textContent = `${sizeUm} μm pixel · mesa ${Math.round(mesaW / fullW * 100)}%`;
   }
 
   function drawChart() {
